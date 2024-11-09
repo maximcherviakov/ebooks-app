@@ -3,6 +3,7 @@ import dotenv from "dotenv";
 dotenv.config();
 
 export const port = process.env.PORT;
+export const frontendUrl = process.env.FRONTEND_URL;
 
 export const uploadedBooksPath = process.env.UPLOADED_BOOKS_PATH;
 export const uploadedThumbnailsPath = process.env.UPLOADED_THUMBNAILS_PATH;
