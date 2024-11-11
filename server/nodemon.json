@@ -1,6 +1,0 @@
-{
-    "watch": ["./"],
-    "ext": "ts,json",
-    "exec": "npx tsx ./src/index.ts"
-  }
-  

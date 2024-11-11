@@ -1,9 +1,9 @@
 import express from "express";
 import cors from "cors";
-import { connectDB } from "./config/db.js";
-import users from "./routes/user.route.js";
-import books from "./routes/book.route.js";
-import { frontendUrl, port } from "./config/envconfig.js";
+import users from "./routes/user.route";
+import books from "./routes/book.route";
+import { connectDB } from "./config/db";
+import { frontendUrl, port } from "./config/envconfig";
 
 const app = express();
 
