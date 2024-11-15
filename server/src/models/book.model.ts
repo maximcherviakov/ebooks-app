@@ -17,13 +17,23 @@ const bookSchema = new Schema<IBook, BookModel>(
       type: String,
       required: true,
     },
-    bookName: {
+    year: {
+      type: Number,
+      required: true,
+    },
+    bookFileName: {
       type: String,
       required: true,
     },
-    thumbnailName: {
+    thumbnailFileName: {
       type: String,
     },
+    genres: [
+      {
+        type: Schema.Types.ObjectId,
+        ref: "Genre",
+      },
+    ],
     user: {
       type: Schema.Types.ObjectId,
       ref: "User",

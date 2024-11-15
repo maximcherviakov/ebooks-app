@@ -17,15 +17,21 @@ export interface IUserMethods {
   comparePassword(password: string): Promise<boolean>;
 }
 
+export interface IGenre {
+  name: string;
+}
+
 export interface IBookPayload {
   title: string;
   description: string;
   author: string;
+  year: number;
+  genres: Types.ObjectId[];
 }
 
 export interface IBook extends IBookPayload {
-  bookName: string;
-  thumbnailName: string;
+  bookFileName: string;
+  thumbnailFileName: string;
   user: Types.ObjectId;
   createdAt: Date;
   updatedAt: Date;
@@ -46,4 +52,13 @@ export interface ICommonRequest extends Request {
 
 export interface ICreateBookRequest extends ICommonRequest {
   body: IBookPayload;
+}
+
+export interface IQueryParams {
+  search?: string;
+  sortBy?: string;
+  sortOrder?: "asc" | "desc";
+  category?: string;
+  author?: string;
+  publishedYear?: number;
 }

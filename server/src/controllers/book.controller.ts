@@ -6,10 +6,13 @@ import { ICreateBookRequest, IBook, ICommonRequest } from "../types/type";
 import generateThumbnail from "../utils/generateThumbnail";
 import { uploadedBooksPath, uploadedThumbnailsPath } from "../config/envconfig";
 import { deleteFile } from "../utils/FileHelper";
+import Genre from "../models/genre.model";
 
 export const getBooks = async (req: Request, res: Response) => {
   try {
-    const books: IBook[] = await Book.find().sort({ createdAt: -1 });
+    const books: IBook[] = await Book.find()
+      .sort({ createdAt: -1 })
+      .populate("genres", "name");
     res.status(200).json(books);
   } catch (error) {
     res.status(500).json({ message: "Error fetching books", error });
@@ -20,7 +23,9 @@ export const getBook = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
 
-    const book = await Book.findById(id).populate("user", "username");
+    const book = await Book.findById(id)
+      .populate("user", "username")
+      .populate("genres", "name");
 
     if (!book) {
       res.status(404).json({ message: "Book not found" });
@@ -35,8 +40,10 @@ export const getBook = async (req: Request, res: Response) => {
 
 export const getBookThumbnail = async (req: Request, res: Response) => {
   try {
-    const { thumbnailName } = req.params;    
-    res.sendFile(path.join(process.cwd(), uploadedThumbnailsPath, thumbnailName));
+    const { thumbnailName } = req.params;
+    res.sendFile(
+      path.join(process.cwd(), uploadedThumbnailsPath, thumbnailName)
+    );
   } catch (error) {
     res.status(500).json({ message: "Error fetching thumbnail", error });
   }
@@ -51,13 +58,38 @@ export const getBookFile = async (req: Request, res: Response) => {
   }
 };
 
+export const getBookGenres = async (req: Request, res: Response) => {
+  try {
+    const genres = await Genre.find();
+    res.status(200).json(genres);
+  } catch (error) {
+    res.status(500).json({ message: "Error fetching genres", error });
+  }
+};
+
 export const createBook = async (req: ICreateBookRequest, res: Response) => {
   try {
-    const { title, description, author } = req.body;
+    const { title, description, author, year, genres } = req.body;
+
+    console.log(req.body);
 
     // Validate required fields
-    if (!title || !description || !author) {
+    if (
+      !title ||
+      !description ||
+      !author ||
+      !year ||
+      !genres ||
+      genres?.length === 0
+    ) {
       res.status(400).json({ message: "All fields are required" });
+      return;
+    }
+
+    // Validate genres
+    const genreIds = await Genre.find({ name: { $in: genres } }).select("_id");
+    if (genreIds.length !== genres.length) {
+      res.status(400).json({ message: "Some genres are invalid" });
       return;
     }
 
@@ -83,8 +115,10 @@ export const createBook = async (req: ICreateBookRequest, res: Response) => {
       title,
       description,
       author,
-      bookName: bookFilename,
-      thumbnailName: thumbnailName,
+      year,
+      genres: genreIds.map((genre: any) => genre._id),
+      bookFileName: bookFilename,
+      thumbnailFileName: thumbnailName,
       user: req.user?._id, // Associate with authenticated user
     });
 
@@ -99,7 +133,7 @@ export const createBook = async (req: ICreateBookRequest, res: Response) => {
 export const updateBook = async (req: ICreateBookRequest, res: Response) => {
   try {
     const { id } = req.params;
-    const { title, description, author } = req.body;
+    const { title, description, author, year, genres } = req.body;
     const book = await Book.findById(id);
     if (!book) {
       res.status(404).json({ message: "Book not found" });
@@ -113,7 +147,7 @@ export const updateBook = async (req: ICreateBookRequest, res: Response) => {
     }
 
     let bookFilename = undefined;
-    let thumbnailName = undefined;
+    let thumbnailFileName = undefined;
 
     if (req.files && req.files.length !== 0) {
       const bookFile = (req.files as any)[0];
@@ -123,18 +157,29 @@ export const updateBook = async (req: ICreateBookRequest, res: Response) => {
       const thumbnailFilename = path.parse(bookFilename).name;
 
       // Generate thumbnail from PDF
-      thumbnailName = await generateThumbnail(bookFilename, thumbnailFilename);
+      thumbnailFileName = await generateThumbnail(
+        bookFilename,
+        thumbnailFilename
+      );
 
       // Delete old files
-      deleteFile(path.join(uploadedBooksPath, book.bookName));
-      deleteFile(path.join(uploadedThumbnailsPath, book.thumbnailName));
+      deleteFile(path.join(uploadedBooksPath, book.bookFileName));
+      deleteFile(path.join(uploadedThumbnailsPath, book.thumbnailFileName));
+    }
+
+    const genreIds = await Genre.find({ name: { $in: genres } }).select("_id");
+    if (genreIds.length !== genres.length) {
+      res.status(400).json({ message: "Some genres are invalid" });
+      return;
     }
 
     book.title = title || book.title;
     book.description = description || book.description;
     book.author = author || book.author;
-    book.bookName = bookFilename || book.bookName;
-    book.thumbnailName = thumbnailName || book.thumbnailName;
+    book.year = year || book.year;
+    book.genres = genreIds.map((genre: any) => genre._id) || book.genres;
+    book.bookFileName = bookFilename || book.bookFileName;
+    book.thumbnailFileName = thumbnailFileName || book.thumbnailFileName;
 
     await book.save();
     res.json(book);
@@ -154,8 +199,8 @@ export const deleteBook = async (req: ICommonRequest, res: Response) => {
     }
 
     // Define file names
-    const bookFilename = book.bookName;
-    const thumbnailFilename = book.thumbnailName;
+    const bookFilename = book.bookFileName;
+    const thumbnailFilename = book.thumbnailFileName;
 
     // Check if the authenticated user is the owner of the book
     if (req.user?._id.toString() !== book.user.toString()) {
