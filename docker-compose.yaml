@@ -1,5 +1,6 @@
 services:
   proxy:
+    container_name: ebooks-app-proxy
     image: traefik:v2.11
     command: --providers.docker
     ports:
@@ -8,6 +9,7 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock
 
   backend:
+    container_name: ebooks-app-backend
     build:
       context: ./
       target: backend-dev
@@ -27,6 +29,7 @@ services:
       traefik.http.services.backend.loadbalancer.server.port: 5000
 
   client:
+    container_name: ebooks-app-client
     build:
       context: ./
       target: client-dev
@@ -43,6 +46,7 @@ services:
 
   mongo:
     image: mongo:8.0
+    container_name: ebooks-app-mongo
     environment:
       MONGO_INITDB_ROOT_USERNAME: admin
       MONGO_INITDB_ROOT_PASSWORD: admin
