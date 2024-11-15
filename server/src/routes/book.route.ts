@@ -2,6 +2,8 @@ import express from "express";
 import {
   getBooks,
   getBook,
+  getBookThumbnail,
+  getBookFile,
   createBook,
   updateBook,
   deleteBook,
@@ -15,6 +17,8 @@ const uploadFields = upload.any();
 
 router.get("/", getBooks);
 router.get("/:id", getBook);
+router.get("/thumbnail/:thumbnailName", getBookThumbnail);
+router.get("/file/:bookName", getBookFile);
 router.post("/", authenticate, uploadFields, createBook);
 router.put("/:id", authenticate, uploadFields, updateBook);
 router.delete("/:id", authenticate, deleteBook);

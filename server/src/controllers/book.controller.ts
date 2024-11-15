@@ -33,6 +33,24 @@ export const getBook = async (req: Request, res: Response) => {
   }
 };
 
+export const getBookThumbnail = async (req: Request, res: Response) => {
+  try {
+    const { thumbnailName } = req.params;    
+    res.sendFile(path.join(process.cwd(), uploadedThumbnailsPath, thumbnailName));
+  } catch (error) {
+    res.status(500).json({ message: "Error fetching thumbnail", error });
+  }
+};
+
+export const getBookFile = async (req: Request, res: Response) => {
+  try {
+    const { bookName } = req.params;
+    res.sendFile(path.join(process.cwd(), uploadedBooksPath, bookName));
+  } catch (error) {
+    res.status(500).json({ message: "Error fetching book file", error });
+  }
+};
+
 export const createBook = async (req: ICreateBookRequest, res: Response) => {
   try {
     const { title, description, author } = req.body;
