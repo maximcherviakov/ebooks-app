@@ -55,10 +55,26 @@ export interface ICreateBookRequest extends ICommonRequest {
 }
 
 export interface IQueryParams {
+  [key: string]: any;
   search?: string;
   sortBy?: string;
   sortOrder?: "asc" | "desc";
-  category?: string;
+  genre?: string;
   author?: string;
-  publishedYear?: number;
+  year?: string;
+  page?: string;
+  limit?: string;
+}
+
+interface IGetBooksRequest extends Request {
+  query: IQueryParams;
+}
+
+export interface IPaginatedResponse {
+  books: IBook[];
+  metadata: {
+    currentPage: number;
+    totalPages: number;
+    totalBooks: number;
+  };
 }

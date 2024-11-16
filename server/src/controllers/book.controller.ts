@@ -2,18 +2,91 @@ import path from "path";
 
 import { Request, Response } from "express";
 import Book from "../models/book.model";
-import { ICreateBookRequest, IBook, ICommonRequest } from "../types/type";
+import {
+  ICreateBookRequest,
+  IBook,
+  ICommonRequest,
+  IQueryParams,
+  IPaginatedResponse,
+  IGetBooksRequest,
+} from "../types/type";
 import generateThumbnail from "../utils/generateThumbnail";
 import { uploadedBooksPath, uploadedThumbnailsPath } from "../config/envconfig";
 import { deleteFile } from "../utils/FileHelper";
 import Genre from "../models/genre.model";
+import { DEFAULT_LIMIT, DEFAULT_PAGE } from "../config/consts";
+import { Types } from "mongoose";
 
-export const getBooks = async (req: Request, res: Response) => {
+export const getBooks = async (req: IGetBooksRequest, res: Response) => {
   try {
-    const books: IBook[] = await Book.find()
-      .sort({ createdAt: -1 })
+    // Extract query parameters
+    const {
+      search,
+      sortBy = "createdAt",
+      sortOrder = "desc",
+      genre,
+      author,
+      year,
+    } = req.query;
+    
+    const page = req.query.page ? parseInt(req.query.page) : DEFAULT_PAGE;
+    const limit = req.query.limit ? parseInt(req.query.limit) : DEFAULT_LIMIT;
+
+    // Pagination parameters
+    const skip = (page - 1) * limit;
+
+    // Build filter query
+    const query: any = {};
+
+    // Search functionality (searching in title, description, and author)
+    if (search) {
+      query.$or = [
+        { title: { $regex: search, $options: "i" } },
+        { description: { $regex: search, $options: "i" } },
+        { author: { $regex: search, $options: "i" } },
+      ];
+    }
+
+    // Genre filtering
+    if (genre && Types.ObjectId.isValid(genre)) {
+      query.genres = new Types.ObjectId(genre);
+    }
+
+    // Author filter
+    if (author) {
+      query.author = { $regex: author, $options: "i" };
+    }
+
+    // Published year filter
+    if (year) {
+      query.year = year;
+    }
+
+    // Build sort object
+    const sortOptions: any = {};
+    sortOptions[sortBy] = sortOrder === "asc" ? 1 : -1;
+
+    const books: IBook[] = await Book.find(query)
+      .sort(sortOptions)
+      .skip(skip)
+      .limit(limit)
       .populate("genres", "name");
-    res.status(200).json(books);
+
+    // Calculate pagination metadata
+    const totalBooks = books.length;
+    const totalPages = Math.ceil(totalBooks / limit);    
+
+    // Prepare response
+    const response: IPaginatedResponse = {
+      books,
+      metadata: {
+        currentPage: page,
+        totalPages,
+        totalBooks
+      },
+    };
+
+    res.status(200).json(response);
   } catch (error) {
     res.status(500).json({ message: "Error fetching books", error });
   }
