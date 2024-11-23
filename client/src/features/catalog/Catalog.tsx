@@ -22,8 +22,10 @@ const Catalog = () => {
             <div>{book.title}</div>
             <div>{book.description}</div>
             <div>{book.author}</div>
-            <div>{book.bookName}</div>
-            <div>{book.thumbnailName}</div>
+            <div>{book.year}</div>
+            <div>{book.genres.toString()}</div>
+            <div>{book.bookFileName}</div>
+            <div>{book.thumbnailFileName}</div>
             <div>{book.user}</div>
             <div>{book.createdAt}</div>
             <div>{book.updatedAt}</div>
