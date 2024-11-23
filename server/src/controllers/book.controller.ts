@@ -28,7 +28,7 @@ export const getBooks = async (req: IGetBooksRequest, res: Response) => {
       author,
       year,
     } = req.query;
-    
+
     const page = req.query.page ? parseInt(req.query.page) : DEFAULT_PAGE;
     const limit = req.query.limit ? parseInt(req.query.limit) : DEFAULT_LIMIT;
 
@@ -74,7 +74,7 @@ export const getBooks = async (req: IGetBooksRequest, res: Response) => {
 
     // Calculate pagination metadata
     const totalBooks = books.length;
-    const totalPages = Math.ceil(totalBooks / limit);    
+    const totalPages = Math.ceil(totalBooks / limit);
 
     // Prepare response
     const response: IPaginatedResponse = {
@@ -82,8 +82,32 @@ export const getBooks = async (req: IGetBooksRequest, res: Response) => {
       metadata: {
         currentPage: page,
         totalPages,
-        totalBooks
+        totalBooks,
       },
+    };
+
+    res.status(200).json(response);
+  } catch (error) {
+    res.status(500).json({ message: "Error fetching books", error });
+  }
+};
+
+export const getUserBooks = async (req: ICommonRequest, res: Response) => {
+  try {
+    const userId = req.user?._id;
+
+    // Build filter query
+    const query: any = {
+      user: userId,
+    };
+
+    const books: IBook[] = await Book.find(query)
+      .sort({ createdAt: -1 })
+      .populate("genres", "name");
+
+    // Prepare response
+    const response = {
+      books,
     };
 
     res.status(200).json(response);
@@ -95,6 +119,11 @@ export const getBooks = async (req: IGetBooksRequest, res: Response) => {
 export const getBook = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
+
+    if (!Types.ObjectId.isValid(id)) {
+      res.status(400).json({ message: "Invalid book ID" });
+      return;
+    }
 
     const book = await Book.findById(id)
       .populate("user", "username")
@@ -142,14 +171,13 @@ export const getBookGenres = async (req: Request, res: Response) => {
 
 export const createBook = async (req: ICreateBookRequest, res: Response) => {
   try {
-    const { title, description, author, year, genres } = req.body;
+    const { title, description = "", author, year, genres } = req.body;
 
     console.log(req.body);
 
     // Validate required fields
     if (
       !title ||
-      !description ||
       !author ||
       !year ||
       !genres ||
