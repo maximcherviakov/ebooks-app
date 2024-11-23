@@ -73,7 +73,7 @@ export const getBooks = async (req: IGetBooksRequest, res: Response) => {
       .populate("genres", "name");
 
     // Calculate pagination metadata
-    const totalBooks = books.length;
+    const totalBooks = await Book.find(query).countDocuments();
     const totalPages = Math.ceil(totalBooks / limit);
 
     // Prepare response
