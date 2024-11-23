@@ -23,8 +23,15 @@ const userSchema = new Schema<IUser, UserModel, IUserMethods>(
     },
     password: {
       type: String,
-      required: [true, "Password is required"],
       minlength: [8, "Password must be at least 8 characters long"],
+    },
+    googleId: {
+      type: String,
+      unique: true,
+    },
+    githubId: {
+      type: String,
+      unique: true,
     },
   },
   { timestamps: true }

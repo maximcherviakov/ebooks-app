@@ -1,15 +1,25 @@
-import { NextFunction, Request, Response } from "express";
+import { Request, Response } from "express";
 import User from "../models/user.model";
 import { createToken } from "../utils/jwtTokenHelper";
+import { IAuthRequest } from "../types/type";
 
-export const signUp = async (
-  req: Request,
-  res: Response,
-  next: NextFunction
-) => {
+export const register = async (req: Request, res: Response) => {
   const { username, email, password } = req.body;
 
   try {
+    // Validate input
+    if (!username || !email || !password) {
+      res.status(400).json({ message: "All fields are required" });
+      return;
+    }
+
+    // Check if the email is already registered
+    const existingUser = await User.findOne({ email });
+    if (existingUser) {
+      res.status(400).json({ message: "Email is already registered" });
+      return;
+    }
+
     const user = new User({ username, email, password });
     await user.save();
 
@@ -17,44 +27,23 @@ export const signUp = async (
       userId: user._id.toString(),
     });
 
-    res.status(201).json({ message: "Registration successful", token });
+    res.status(201).json({ username, email, token });
   } catch (error) {
     if (error.code === 11000) {
       // Duplicate key error
       res.status(409).json({ message: "Username or email already exists" });
     } else {
-      next(error);
+      console.error("Registration error:", error);
+      res.status(500).json({ message: "Internal server error" });
     }
   }
 };
 
-export const signIn = async (
-  req: Request,
-  res: Response,
-  next: NextFunction
-) => {
-  const { username, password } = req.body;
+export const login = async (req: IAuthRequest, res: Response) => {
+  console.log("login:", req.user);
 
-  try {
-    const user = await User.findOne({ username });
-    if (!user) {
-      res.status(404).json({ message: "User not found" });
-      return;
-    }
-
-    const passwordMatch = await user.comparePassword(password);
-
-    if (!passwordMatch) {
-      res.status(401).json({ message: "Incorrect password" });
-      return;
-    }
-
-    const token = createToken({
-      userId: user._id.toString(),
-    });
-
-    res.json({ token });
-  } catch (error) {
-    next(error);
-  }
+  const username = req.user?.username;
+  const email = req.user?.email;
+  const token = createToken({ userId: req.user?._id.toString() });
+  res.json({ username, email, token });
 };

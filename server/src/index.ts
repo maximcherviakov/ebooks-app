@@ -1,13 +1,13 @@
 import express from "express";
 import cors from "cors";
+import passport from "passport";
 import users from "./routes/user.route";
 import books from "./routes/book.route";
 import { connectDB } from "./config/db";
 import { frontendUrl, port } from "./config/envconfig";
+import "./config/passport";
 
 const app = express();
-
-app.use(express.json());
 
 // Configure CORS options (e.g., allow specific origin)
 const corsOptions = {
@@ -18,6 +18,12 @@ const corsOptions = {
 
 // Enable CORS with the configured options
 app.use(cors(corsOptions));
+
+// Middleware to parse JSON requests
+app.use(express.json());
+
+// Initialize Passport middleware
+app.use(passport.initialize());
 
 app.use("/api/users", users);
 app.use("/api/books", books);

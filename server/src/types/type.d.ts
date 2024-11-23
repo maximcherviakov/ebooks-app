@@ -10,7 +10,9 @@ export interface IUserPayload {
 }
 
 export interface IUser extends IUserPayload {
-  password: string;
+  password?: string;
+  googleId?: string;
+  githubId?: string;
 }
 
 export interface IUserMethods {
@@ -66,7 +68,7 @@ export interface IQueryParams {
   limit?: string;
 }
 
-interface IGetBooksRequest extends Request {
+interface IGetBooksRequest extends ICommonRequest {
   query: IQueryParams;
 }
 

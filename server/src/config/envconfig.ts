@@ -6,7 +6,8 @@ export const port = process.env.BACKEND_PORT;
 export const frontendUrl = `http://${process.env.FRONTEND_HOST}:${process.env.FRONTEND_PORT}`;
 
 export const uploadedBooksPath = process.env.BACKEND_UPLOADED_BOOKS_PATH;
-export const uploadedThumbnailsPath = process.env.BACKEND_UPLOADED_THUMBNAILS_PATH;
+export const uploadedThumbnailsPath =
+  process.env.BACKEND_UPLOADED_THUMBNAILS_PATH;
 
 export const mongoHost = process.env.MONGO_HOST;
 export const mongoPort = process.env.MONGO_PORT;
@@ -17,3 +18,9 @@ export const mongoUri = `mongodb://${mongoUser}:${mongoPass}@${mongoHost}:${mong
 
 export const jwtSecretKey = process.env.BACKEND_JWT_SECRET_KEY;
 export const jwtExpiresIn = process.env.BACKEND_JWT_EXPIRES_IN;
+
+export const googleClientId = process.env.BACKEND_GOOGLE_CLIENT_ID;
+export const googleClientSecret = process.env.BACKEND_GOOGLE_CLIENT_SECRET;
+
+export const githubClientId = process.env.BACKEND_GITHUB_CLIENT_ID;
+export const githubClientSecret = process.env.BACKEND_GITHUB_CLIENT_SECRET;
