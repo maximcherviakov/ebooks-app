@@ -1,7 +1,7 @@
 import axios, { AxiosError, AxiosResponse } from "axios";
 import { router } from "../router/Routes";
 import { IUserRegisterPayload, IUserLoginPayload } from "../types/type";
-import { getUser } from "../utils/localStorageHelper";
+import { getToken } from "../utils/localStorageHelper";
 
 axios.defaults.baseURL = "/api";
 axios.defaults.withCredentials = true;
@@ -34,8 +34,7 @@ axios.interceptors.response.use(
 
 axios.interceptors.request.use(
   (config) => {
-    const user = getUser();
-    const token = user?.token;
+    const token = getToken();
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -58,6 +57,7 @@ const User = {
   signUp: (user: IUserRegisterPayload) =>
     requests.post("/users/register", user),
   signIn: (user: IUserLoginPayload) => requests.post("/users/login", user),
+  current: () => requests.get("/users/info"),
 };
 
 const Book = {

@@ -13,11 +13,11 @@ import Settings from "../../features/dashboard/Settings";
 import SignUp from "../../features/account/SignUp";
 import SignIn from "../../features/account/SignIn";
 import Logout from "../../features/account/Logout";
+import OAuthSuccess from "../../features/account/OAuthSuccess";
 import BadRequest from "../errors/BadRequest";
 import NotFound from "../errors/NotFound";
 import Unauthorized from "../errors/Unauthorized";
 import ServerError from "../errors/ServerError";
-import TestPage from "../../features/testPage/TestPage";
 
 export const router = createBrowserRouter([
   {
@@ -26,7 +26,6 @@ export const router = createBrowserRouter([
     children: [
       // Page routes
       { path: "/", element: <HomePage /> },
-      { path: "/test", element: <TestPage /> },
       { path: "/catalog", element: <Catalog /> },
       { path: "/book/:id", element: <BookDetails /> },
 
@@ -52,6 +51,7 @@ export const router = createBrowserRouter([
       { path: "/signup", element: <SignUp /> },
       { path: "/signin", element: <SignIn /> },
       { path: "/logout", element: <Logout /> },
+      { path: "/auth-success", element: <OAuthSuccess /> },
 
       // Error routes
       { path: "/bad-request", element: <BadRequest /> },

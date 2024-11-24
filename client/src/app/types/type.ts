@@ -12,12 +12,13 @@ export interface IThemeContext {
 export interface IUserPayload {
   username: string;
   email: string;
-  token: string;
 }
 
 export interface IAuthContext {
+  token: string | null;
   user: IUserPayload | null;
-  login: (user: IUserPayload) => void;
+  setAuthToken: (token: string) => void;
+  setUser: (user: IUserPayload) => void;
   logout: () => void;
   isAuthenticated: boolean;
 }

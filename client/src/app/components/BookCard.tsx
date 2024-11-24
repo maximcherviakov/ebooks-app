@@ -51,7 +51,20 @@ const BookCard = ({ book }: Props) => {
           >
             {title}
           </Typography>
-          <Typography align="center" variant="body2">
+          <Typography
+            component={NavLink}
+            to={`/catalog/?author=${author}`}
+            align="center"
+            variant="body2"
+            sx={{
+              color: "text.primary",
+              textDecoration: "none",
+              transition: "all .25s ease",
+              "&:hover": {
+                color: "text.secondary",
+              },
+            }}
+          >
             {author}
           </Typography>
         </Box>

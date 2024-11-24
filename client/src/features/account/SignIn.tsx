@@ -11,13 +11,13 @@ import {
   Typography,
 } from "@mui/material";
 import agent from "../../app/api/agent";
-import { GitHubIcon, GoogleIcon } from "../../app/components/CustomIcons";
+import { GoogleIcon } from "../../app/components/CustomIcons";
 import { useAuth } from "../../app/context/AuthContext";
 import { useNavigate } from "react-router-dom";
 
 export default function SignIn() {
   const navigate = useNavigate();
-  const { login } = useAuth();
+  const { setAuthToken } = useAuth();
   const [emailError, setEmailError] = useState(false);
   const [emailErrorMessage, setEmailErrorMessage] = useState("");
   const [passwordError, setPasswordError] = useState(false);
@@ -34,8 +34,8 @@ export default function SignIn() {
 
       const response = await agent.User.signIn(payload);
 
-      const user = response;
-      login(user);
+      const token = response.token;
+      setAuthToken(token);
 
       navigate("/dashboard");
     } catch (error) {
@@ -68,6 +68,10 @@ export default function SignIn() {
     }
 
     return isValid;
+  };
+
+  const handleGoogleSignIn = () => {
+    window.location.href = "/api/users/auth/google";
   };
 
   return (
@@ -186,20 +190,11 @@ export default function SignIn() {
               fullWidth
               variant="contained"
               color="secondary"
-              onClick={() => alert("Sign in with Google")}
+              onClick={handleGoogleSignIn}
               startIcon={<GoogleIcon />}
               sx={{ borderRadius: "1000px", py: "0.5rem" }}
             >
               Google
-            </Button>
-            <Button
-              fullWidth
-              variant="outlined"
-              onClick={() => alert("Sign in with GitHub")}
-              startIcon={<GitHubIcon />}
-              sx={{ borderRadius: "1000px", py: "0.5rem" }}
-            >
-              GitHub
             </Button>
             <Typography variant="body1" sx={{ textAlign: "center" }}>
               Don&apos;t have an account?{" "}

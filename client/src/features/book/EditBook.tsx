@@ -30,13 +30,6 @@ const EditBook = () => {
     genres: [],
     file: null,
   });
-  const [errors, setErrors] = useState({
-    title: false,
-    author: false,
-    year: false,
-    genres: false,
-    file: false,
-  });
   const [genres, setGenres] = useState<string[]>([]);
 
   useEffect(() => {
@@ -97,27 +90,11 @@ const EditBook = () => {
     }));
   };
 
-  const validateForm = () => {
-    const newErrors = {
-      title: !formData.title,
-      author: !formData.author,
-      year: !formData.year,
-      genres: formData.genres.length === 0,
-      file: !formData.file,
-    };
-    setErrors(newErrors);
-    return Object.values(newErrors).every((error) => !error);
-  };
-
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
     if (!id) {
       navigate("/not-found");
-      return;
-    }
-
-    if (!validateForm()) {
       return;
     }
 
@@ -176,8 +153,6 @@ const EditBook = () => {
             name="title"
             value={formData.title}
             onChange={handleInputChange}
-            error={errors.title}
-            helperText={errors.title && "Title is required"}
           />
         </FormControl>
         <FormControl fullWidth margin="normal">
@@ -196,8 +171,6 @@ const EditBook = () => {
             name="author"
             value={formData.author}
             onChange={handleInputChange}
-            error={errors.author}
-            helperText={errors.author && "Author is required"}
           />
         </FormControl>
         <FormControl fullWidth margin="normal">
@@ -207,8 +180,6 @@ const EditBook = () => {
             type="number"
             value={formData.year}
             onChange={handleInputChange}
-            error={errors.year}
-            helperText={errors.year && "Year is required"}
           />
         </FormControl>
         <FormControl fullWidth margin="normal">
@@ -227,19 +198,9 @@ const EditBook = () => {
               </MenuItem>
             ))}
           </Select>
-          {errors.genres && (
-            <Typography color="error" variant="body2">
-              At least one genre is required
-            </Typography>
-          )}
         </FormControl>
         <FormControl fullWidth margin="normal">
           <DragAndDropFileUpload onFileUpload={handleFileUpload} />
-          {errors.file && (
-            <Typography color="error" variant="body2">
-              File is required
-            </Typography>
-          )}
         </FormControl>
         <Button
           type="submit"

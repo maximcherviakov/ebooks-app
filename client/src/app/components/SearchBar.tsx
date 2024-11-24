@@ -51,8 +51,8 @@ export default function SearchBar({ fontSize, width }: Props) {
   const [searchTerm, setSearchTerm] = useState("");
 
   function handleSubmit(text: string) {
-    // navigate(`/search?q=${encodeURIComponent(text.trim())}`);
-    // setSearchTerm("");
+    navigate(`/catalog?search=${encodeURIComponent(text.trim())}`);
+    setSearchTerm("");
   }
 
   return (
