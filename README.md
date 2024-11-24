@@ -34,7 +34,34 @@ The Ebooks project is a full-stack web application designed to manage and share 
 ## Prerequisites
 - Installed Docker;
 # Installation
-Open the project folder and run the following command
+1. Open the project folder
+2. Create .env file with the next structure
+```Properties
+# SERVER VARIABLES
+BACKEND_HOST=backend
+BACKEND_PORT=5000
+
+BACKEND_UPLOADED_BOOKS_PATH=uploads/books
+BACKEND_UPLOADED_THUMBNAILS_PATH=uploads/thumbnails
+
+BACKEND_JWT_SECRET_KEY=""
+BACKEND_JWT_EXPIRES_IN=""
+
+BACKEND_GOOGLE_CLIENT_ID=""
+BACKEND_GOOGLE_CLIENT_SECRET=""
+
+# CLIENT VARIABLES
+FRONTEND_HOST=client
+FRONTEND_PORT=3000
+
+# MONGODB VARIABLES
+MONGO_HOST=ebooks-app-mongo
+MONGO_PORT=27017
+MONGO_DB=ebooks-db
+MONGO_USER=""
+MONGO_PASS=""
+```
+4. Run the following command
 ```bash
 docker compose up -d
 ```
