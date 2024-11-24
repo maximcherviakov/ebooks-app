@@ -41,6 +41,8 @@ export interface IBook extends IBookPayload {
 
 export interface IUserTokenPayload {
   userId: string;
+  username: string;
+  email: string;
 }
 
 // Define the types for the request object

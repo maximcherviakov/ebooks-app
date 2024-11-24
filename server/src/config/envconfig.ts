@@ -21,6 +21,3 @@ export const jwtExpiresIn = process.env.BACKEND_JWT_EXPIRES_IN;
 
 export const googleClientId = process.env.BACKEND_GOOGLE_CLIENT_ID;
 export const googleClientSecret = process.env.BACKEND_GOOGLE_CLIENT_SECRET;
-
-export const githubClientId = process.env.BACKEND_GITHUB_CLIENT_ID;
-export const githubClientSecret = process.env.BACKEND_GITHUB_CLIENT_SECRET;

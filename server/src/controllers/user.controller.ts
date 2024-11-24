@@ -25,9 +25,11 @@ export const register = async (req: Request, res: Response) => {
 
     const token = createToken({
       userId: user._id.toString(),
+      username: user.username,
+      email: user.email,
     });
 
-    res.status(201).json({ username, email, token });
+    res.status(201).json({ token });
   } catch (error) {
     if (error.code === 11000) {
       // Duplicate key error
@@ -44,6 +46,14 @@ export const login = async (req: IAuthRequest, res: Response) => {
 
   const username = req.user?.username;
   const email = req.user?.email;
-  const token = createToken({ userId: req.user?._id.toString() });
-  res.json({ username, email, token });
+  const token = createToken({
+    userId: req.user?._id.toString(),
+    username,
+    email,
+  });
+  res.json({ token });
+};
+
+export const info = async (req: IAuthRequest, res: Response) => {
+  res.json(req.user);
 };

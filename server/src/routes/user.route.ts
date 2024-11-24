@@ -1,10 +1,13 @@
 import express from "express";
-import { login, register } from "../controllers/user.controller";
+import { info, login, register } from "../controllers/user.controller";
 import { createToken } from "../utils/jwtTokenHelper";
 import passport from "passport";
 import { IUserTokenPayload } from "../types/type";
+import { authenticate } from "../middlewares/auth";
 
 const router = express.Router();
+
+router.get("/info", authenticate, info);
 
 // Local login
 router.post("/register", register);
@@ -16,28 +19,18 @@ router.post(
 
 // Google auth
 router.get(
-  "/google",
+  "/auth/google",
   passport.authenticate("google", { scope: ["profile", "email"] })
 );
 router.get(
-  "/google/callback",
+  "/auth/google/callback",
   passport.authenticate("google", { session: false }),
   (req, res) => {
-    const token = createToken(req.user as IUserTokenPayload);
-    res.redirect(`/auth-success?token=${token}`);
-  }
-);
-
-// GitHub auth
-router.get(
-  "/github",
-  passport.authenticate("github", { scope: ["user:email"] })
-);
-router.get(
-  "/github/callback",
-  passport.authenticate("github", { session: false }),
-  (req, res) => {
-    const token = createToken(req.user as IUserTokenPayload);
+    const token = createToken({
+      userId: (req.user as any)._id,
+      username: (req.user as any).displayName,
+      email: (req.user as any).emails?.[0].value,
+    } as IUserTokenPayload);
     res.redirect(`/auth-success?token=${token}`);
   }
 );
