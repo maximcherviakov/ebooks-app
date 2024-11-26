@@ -1,6 +1,6 @@
 import ErrorPage from "./ErrorPage";
 
-const NotFound: React.FC = () => (
+const BadRequest: React.FC = () => (
   <ErrorPage
     code={400}
     title="Bad Request"
@@ -8,4 +8,4 @@ const NotFound: React.FC = () => (
   />
 );
 
-export default NotFound;
+export default BadRequest;
