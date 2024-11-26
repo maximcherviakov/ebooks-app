@@ -196,6 +196,7 @@ const Catalog = () => {
 
   const handleClearFilters = () => {
     setQueryParams((params) => {
+      params.delete("search");
       params.delete("sortBy");
       params.delete("sortOrder");
       params.delete("genre");
