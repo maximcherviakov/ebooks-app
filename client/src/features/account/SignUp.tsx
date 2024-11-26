@@ -7,8 +7,13 @@ import Link from "@mui/material/Link";
 import TextField from "@mui/material/TextField";
 import Typography from "@mui/material/Typography";
 import { Card } from "@mui/material";
+import agent from "../../app/api/agent";
+import { useAuth } from "../../app/context/AuthContext";
+import { useNavigate } from "react-router-dom";
 
 export default function SignUp() {
+  const navigate = useNavigate();
+  const { setAuthToken } = useAuth();
   const [nameError, setNameError] = React.useState(false);
   const [nameErrorMessage, setNameErrorMessage] = React.useState("");
   const [emailError, setEmailError] = React.useState(false);
@@ -16,14 +21,26 @@ export default function SignUp() {
   const [passwordError, setPasswordError] = React.useState(false);
   const [passwordErrorMessage, setPasswordErrorMessage] = React.useState("");
 
-  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    const data = new FormData(event.currentTarget);
-    console.log({
-      name: data.get("username"),
-      email: data.get("email"),
-      password: data.get("password"),
-    });
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+    try {
+      event.preventDefault();
+      const data = new FormData(event.currentTarget);
+
+      const payload = {
+        username: data.get("username")?.toString() || "",
+        email: data.get("email")?.toString() || "",
+        password: data.get("password")?.toString() || "",
+      };
+
+      const response = await agent.User.signUp(payload);
+
+      const token = response.token;
+      setAuthToken(token);
+
+      navigate("/dashboard");
+    } catch (error) {
+      console.error("Registration failed: ", error);
+    }
   };
 
   const validateInputs = () => {

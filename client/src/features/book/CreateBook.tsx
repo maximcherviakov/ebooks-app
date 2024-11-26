@@ -104,8 +104,7 @@ const CreateBook = () => {
     }
 
     agent.Book.create(data)
-      .then((response) => {
-        console.log(response);
+      .then(() => {
         navigate("/dashboard/books");
       })
       .catch((error) => {

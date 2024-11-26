@@ -109,8 +109,7 @@ const EditBook = () => {
     }
 
     agent.Book.edit(id, data)
-      .then((response) => {
-        console.log(response);
+      .then(() => {
         navigate("/dashboard/books");
       })
       .catch((error) => {

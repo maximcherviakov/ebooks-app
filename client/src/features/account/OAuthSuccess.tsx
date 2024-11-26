@@ -1,24 +1,42 @@
 import { useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { Navigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "../../app/context/AuthContext";
+import { Box, Typography } from "@mui/material";
 
 const OAuthSuccess = () => {
-  const navigate = useNavigate();
-  const { setAuthToken } = useAuth();
+  const [queryParams] = useSearchParams();
+  const { isAuthenticated, user, setAuthToken } = useAuth();
 
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const token = params.get("token");
+    const token = queryParams.get("token");
 
     if (token) {
       setAuthToken(token);
-      navigate("/dashboard");
     } else {
       console.error("OAuth token missing");
     }
-  }, [navigate, setAuthToken]);
+  }, [isAuthenticated, queryParams, setAuthToken]);
 
-  return <div>Logging you in...</div>;
+  if (isAuthenticated && user) {
+    return <Navigate to="/dashboard" />;
+  }
+
+  return (
+    <Box
+      sx={{
+        display: "flex",
+        flexDirection: "column",
+        minHeight: "100vh",
+        justifyContent: "center",
+        alignItems: "center",
+        mx: "5rem",
+        marginTop: "1rem",
+        marginBottom: "3rem",
+      }}
+    >
+      <Typography variant="h5">Logging you in...</Typography>
+    </Box>
+  );
 };
 
 export default OAuthSuccess;

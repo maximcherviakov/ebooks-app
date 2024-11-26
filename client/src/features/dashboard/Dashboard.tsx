@@ -1,7 +1,7 @@
 import { Avatar, Box, Divider, Paper, Typography } from "@mui/material";
 import stringToColor from "../../app/utils/stringToColor";
 import { useAuth } from "../../app/context/AuthContext";
-import { NavLink, Outlet, useNavigate } from "react-router-dom";
+import { Navigate, NavLink, Outlet } from "react-router-dom";
 import LogoutIcon from "@mui/icons-material/Logout";
 import SettingsIcon from "@mui/icons-material/Settings";
 import PersonOutline from "@mui/icons-material/PersonOutline";
@@ -9,11 +9,9 @@ import CollectionsBookmarkIcon from "@mui/icons-material/CollectionsBookmark";
 
 const Dashboard = () => {
   const { isAuthenticated, user } = useAuth();
-  const navigate = useNavigate();
 
   if (!isAuthenticated || !user) {
-    navigate("/signin");
-    return;
+    return <Navigate to="/signin" />;
   }
 
   return (
