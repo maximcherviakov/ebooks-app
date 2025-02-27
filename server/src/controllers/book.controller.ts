@@ -6,7 +6,6 @@ import {
   ICreateBookRequest,
   IBook,
   ICommonRequest,
-  IQueryParams,
   IPaginatedResponse,
   IGetBooksRequest,
 } from "../types/type";
