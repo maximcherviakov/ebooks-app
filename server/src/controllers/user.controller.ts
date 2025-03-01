@@ -43,6 +43,10 @@ export const register = async (req: Request, res: Response) => {
 
 export const login = async (req: IAuthRequest, res: Response) => {
   console.log("login:", req.user);
+  if (!req.user) {
+    res.status(401).json({ message: "Authentication failed" });
+    return;
+  }
 
   const username = req.user?.username;
   const email = req.user?.email;
@@ -56,4 +60,57 @@ export const login = async (req: IAuthRequest, res: Response) => {
 
 export const info = async (req: IAuthRequest, res: Response) => {
   res.json(req.user);
+};
+
+export const resetPassword = async (req: IAuthRequest, res: Response) => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+
+    // Validate input
+    if (!currentPassword || !newPassword) {
+      res
+        .status(400)
+        .json({ message: "Current and new password are required" });
+      return;
+    }
+
+    if (newPassword.length < 6) {
+      res
+        .status(400)
+        .json({ message: "New password must be at least 6 characters long" });
+      return;
+    }
+
+    const user = await User.findById(req.user._id);
+    if (!user) {
+      res.status(404).json({ message: "User not found" });
+      return;
+    }
+
+    // Check if the user is authenticated via any third-party provider
+    // This checks for any field that indicates third-party authentication
+    if (user.googleId) {
+      res.status(403).json({
+        message:
+          "Password reset is not available for accounts using third-party authentication",
+      });
+      return;
+    }
+
+    // Verify current password
+    const isPasswordValid = await user.comparePassword(currentPassword);
+    if (!isPasswordValid) {
+      res.status(401).json({ message: "Current password is incorrect" });
+      return;
+    }
+
+    // Update password
+    user.password = newPassword; // The password will be hashed in the pre-save hook
+    await user.save();
+
+    res.status(200).json({ message: "Password updated successfully" });
+  } catch (error) {
+    console.error("Error resetting password:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
 };

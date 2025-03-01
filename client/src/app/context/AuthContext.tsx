@@ -11,6 +11,7 @@ export const AuthProvider: React.FunctionComponent<React.PropsWithChildren> = ({
 }) => {
   const [token, setTokenState] = useState<string | null>(getToken());
   const [user, setUserState] = useState<IUserPayload | null>(null);
+  const [isLoading, setIsLoading] = useState(!!token);
 
   // Handlers to update state
   const setAuthToken = (token: string) => {
@@ -30,6 +31,7 @@ export const AuthProvider: React.FunctionComponent<React.PropsWithChildren> = ({
   useEffect(() => {
     const fetchUserData = async () => {
       if (token) {
+        setIsLoading(true);
         try {
           const response = await agent.User.current();
           const user = {
@@ -39,6 +41,8 @@ export const AuthProvider: React.FunctionComponent<React.PropsWithChildren> = ({
           setUserState(user);
         } catch (error) {
           console.error("Failed to fetch user data: ", error);
+        } finally {
+          setIsLoading(false);
         }
       }
     };
@@ -47,7 +51,15 @@ export const AuthProvider: React.FunctionComponent<React.PropsWithChildren> = ({
 
   return (
     <AuthContext.Provider
-      value={{ token, user, setAuthToken, setUser, logout, isAuthenticated }}
+      value={{
+        token,
+        user,
+        setAuthToken,
+        setUser,
+        logout,
+        isAuthenticated,
+        isLoading,
+      }}
     >
       {children}
     </AuthContext.Provider>

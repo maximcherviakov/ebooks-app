@@ -13,11 +13,10 @@ import {
 import agent from "../../app/api/agent";
 import { GoogleIcon } from "../../app/components/CustomIcons";
 import { useAuth } from "../../app/context/AuthContext";
-import { useNavigate } from "react-router-dom";
+import { Navigate } from "react-router-dom";
 
 export default function SignIn() {
-  const navigate = useNavigate();
-  const { setAuthToken } = useAuth();
+  const { setAuthToken, isAuthenticated, user } = useAuth();
   const [emailError, setEmailError] = useState(false);
   const [emailErrorMessage, setEmailErrorMessage] = useState("");
   const [passwordError, setPasswordError] = useState(false);
@@ -36,8 +35,6 @@ export default function SignIn() {
 
       const token = response.token;
       setAuthToken(token);
-
-      navigate("/dashboard");
     } catch (error) {
       console.error("Login failed: ", error);
     }
@@ -73,6 +70,10 @@ export default function SignIn() {
   const handleGoogleSignIn = () => {
     window.location.href = "/api/users/auth/google";
   };
+
+  if (isAuthenticated && user) {
+    return <Navigate to="/dashboard" />;
+  }
 
   return (
     <Box

@@ -21,6 +21,7 @@ export interface IAuthContext {
   setUser: (user: IUserPayload) => void;
   logout: () => void;
   isAuthenticated: boolean;
+  isLoading: boolean;
 }
 
 export interface IUserLoginPayload {

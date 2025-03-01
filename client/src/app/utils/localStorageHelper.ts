@@ -3,7 +3,7 @@ export const setToken = (token: string): void => {
 };
 
 export const getToken = (): string | null => {
-  const token = localStorage.getItem("token") || "";
+  const token = localStorage.getItem("token");
   return token;
 };
 

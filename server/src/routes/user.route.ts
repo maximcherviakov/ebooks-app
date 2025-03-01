@@ -1,5 +1,10 @@
 import express from "express";
-import { info, login, register } from "../controllers/user.controller";
+import {
+  info,
+  login,
+  register,
+  resetPassword,
+} from "../controllers/user.controller";
 import { createToken } from "../utils/jwtTokenHelper";
 import passport from "passport";
 import { IUserTokenPayload } from "../types/type";
@@ -16,6 +21,9 @@ router.post(
   passport.authenticate("local", { session: false }),
   login
 );
+
+// Password reset
+router.post("/reset-password", authenticate, resetPassword);
 
 // Google auth
 router.get(

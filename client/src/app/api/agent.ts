@@ -58,6 +58,8 @@ const User = {
     requests.post("/users/register", user),
   signIn: (user: IUserLoginPayload) => requests.post("/users/login", user),
   current: () => requests.get("/users/info"),
+  resetPassword: (data: { currentPassword: string; newPassword: string }) =>
+    requests.post("/users/reset-password", data),
 };
 
 const Book = {

@@ -1,4 +1,4 @@
-import { Avatar, Box, Divider, Paper, Typography } from "@mui/material";
+import { Avatar, Box, CircularProgress, Divider, Paper, Typography } from "@mui/material";
 import stringToColor from "../../app/utils/stringToColor";
 import { useAuth } from "../../app/context/AuthContext";
 import { Navigate, NavLink, Outlet } from "react-router-dom";
@@ -8,7 +8,20 @@ import PersonOutline from "@mui/icons-material/PersonOutline";
 import CollectionsBookmarkIcon from "@mui/icons-material/CollectionsBookmark";
 
 const Dashboard = () => {
-  const { isAuthenticated, user } = useAuth();
+  const { isAuthenticated, user, isLoading } = useAuth();
+
+  if (isLoading) {
+    return (
+      <Box
+        display="flex"
+        justifyContent="center"
+        alignItems="center"
+        minHeight="100vh"
+      >
+        <CircularProgress />
+      </Box>
+    );
+  }
 
   if (!isAuthenticated || !user) {
     return <Navigate to="/signin" />;
