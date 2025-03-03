@@ -534,4 +534,110 @@ describe("Book Controller", () => {
       });
     });
   });
+
+  describe("getUserBooks", () => {
+    it("should return books for the authenticated user", async () => {
+      // Arrange
+      const userId = new Types.ObjectId();
+      const mockBooks = [{ title: "User Book 1" }, { title: "User Book 2" }];
+      mockRequest.user = { _id: userId };
+
+      (Book.find as jest.Mock).mockReturnValue({
+        sort: jest.fn().mockReturnThis(),
+        populate: jest.fn().mockResolvedValue(mockBooks),
+      });
+
+      // Act
+      await bookController.getUserBooks(
+        mockRequest as any,
+        mockResponse as Response
+      );
+
+      // Assert
+      expect(mockResponse.status).toHaveBeenCalledWith(200);
+      expect(mockResponse.json).toHaveBeenCalledWith({ books: mockBooks });
+      expect(Book.find).toHaveBeenCalledWith({ user: userId });
+    });
+
+    it("should handle errors", async () => {
+      // Arrange
+      mockRequest.user = { _id: new Types.ObjectId() };
+      (Book.find as jest.Mock).mockImplementation(() => {
+        throw new Error("Database error");
+      });
+
+      // Act
+      await bookController.getUserBooks(
+        mockRequest as any,
+        mockResponse as Response
+      );
+
+      // Assert
+      expect(mockResponse.status).toHaveBeenCalledWith(500);
+    });
+
+    it("should sort books by createdAt in descending order", async () => {
+      // Arrange
+      const userId = new Types.ObjectId();
+      mockRequest.user = { _id: userId };
+      const sortMock = jest.fn().mockReturnThis();
+
+      (Book.find as jest.Mock).mockReturnValue({
+        sort: sortMock,
+        populate: jest.fn().mockResolvedValue([]),
+      });
+
+      // Act
+      await bookController.getUserBooks(
+        mockRequest as any,
+        mockResponse as Response
+      );
+
+      // Assert
+      expect(sortMock).toHaveBeenCalledWith({ createdAt: -1 });
+    });
+
+    it("should populate genres field with name property", async () => {
+      // Arrange
+      const userId = new Types.ObjectId();
+      mockRequest.user = { _id: userId };
+      const sortMock = jest.fn().mockReturnThis();
+      const populateMock = jest.fn().mockResolvedValue([]);
+
+      (Book.find as jest.Mock).mockReturnValue({
+        sort: sortMock,
+        populate: populateMock,
+      });
+
+      // Act
+      await bookController.getUserBooks(
+        mockRequest as any,
+        mockResponse as Response
+      );
+
+      // Assert
+      expect(populateMock).toHaveBeenCalledWith("genres", "name");
+    });
+
+    it("should return empty array when user has no books", async () => {
+      // Arrange
+      mockRequest.user = { _id: new Types.ObjectId() };
+      const emptyBooks: any[] = [];
+
+      (Book.find as jest.Mock).mockReturnValue({
+        sort: jest.fn().mockReturnThis(),
+        populate: jest.fn().mockResolvedValue(emptyBooks),
+      });
+
+      // Act
+      await bookController.getUserBooks(
+        mockRequest as any,
+        mockResponse as Response
+      );
+
+      // Assert
+      expect(mockResponse.status).toHaveBeenCalledWith(200);
+      expect(mockResponse.json).toHaveBeenCalledWith({ books: [] });
+    });
+  });
 });
