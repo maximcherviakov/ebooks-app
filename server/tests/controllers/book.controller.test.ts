@@ -849,4 +849,62 @@ describe("Book Controller", () => {
       });
     });
   });
+
+  describe("getBookGenres", () => {
+    it("should return all genres with 200 status", async () => {
+      // Arrange
+      const mockGenres = [
+        { _id: new Types.ObjectId(), name: "Fiction" },
+        { _id: new Types.ObjectId(), name: "Non-fiction" },
+      ];
+
+      (Genre.find as jest.Mock).mockResolvedValue(mockGenres);
+
+      // Act
+      await bookController.getBookGenres(
+        mockRequest as Request,
+        mockResponse as Response
+      );
+
+      // Assert
+      expect(mockResponse.status).toHaveBeenCalledWith(200);
+      expect(mockResponse.json).toHaveBeenCalledWith(mockGenres);
+      expect(Genre.find).toHaveBeenCalled();
+    });
+
+    it("should return empty array when no genres exist", async () => {
+      // Arrange
+      const emptyGenres: any[] = [];
+      (Genre.find as jest.Mock).mockResolvedValue(emptyGenres);
+
+      // Act
+      await bookController.getBookGenres(
+        mockRequest as Request,
+        mockResponse as Response
+      );
+
+      // Assert
+      expect(mockResponse.status).toHaveBeenCalledWith(200);
+      expect(mockResponse.json).toHaveBeenCalledWith(emptyGenres);
+    });
+
+    it("should return 500 when an error occurs", async () => {
+      // Arrange
+      const error = new Error("Database error");
+      (Genre.find as jest.Mock).mockRejectedValue(error);
+
+      // Act
+      await bookController.getBookGenres(
+        mockRequest as Request,
+        mockResponse as Response
+      );
+
+      // Assert
+      expect(mockResponse.status).toHaveBeenCalledWith(500);
+      expect(mockResponse.json).toHaveBeenCalledWith({
+        message: "Error fetching genres",
+        error,
+      });
+    });
+  });
 });
