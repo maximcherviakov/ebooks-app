@@ -33,6 +33,21 @@ jest.mock("path", () => ({
     .mockImplementation((filename) => ({ name: filename.split(".")[0] })),
 }));
 
+const createMockFile = (filename: string): Express.Multer.File => {
+  return {
+    fieldname: "book",
+    originalname: `original_${filename}`,
+    encoding: "7bit",
+    mimetype: "application/pdf",
+    size: 12345,
+    destination: "/mock/destination",
+    filename: filename,
+    path: `/mock/destination/${filename}`,
+    buffer: Buffer.from("mock file content"),
+    stream: {} as any,
+  };
+};
+
 describe("Book Controller", () => {
   let mockRequest: Partial<Request>;
   let mockResponse: Partial<Response>;
@@ -757,15 +772,6 @@ describe("Book Controller", () => {
         mockResponse as Response
       );
 
-      console.log(
-        path
-          .join(process.cwd(), uploadedThumbnailsPath, thumbnailName)
-          .toString()
-      );
-      console.log(process.cwd());
-      console.log(uploadedThumbnailsPath);
-      console.log(thumbnailName);
-
       // Assert
       expect(mockResponse.sendFile).toHaveBeenCalledWith(
         path.join(process.cwd(), uploadedThumbnailsPath, thumbnailName)
@@ -905,6 +911,290 @@ describe("Book Controller", () => {
         message: "Error fetching genres",
         error,
       });
+    });
+  });
+
+  describe("createBook", () => {
+    beforeEach(() => {
+      (generateThumbnail as jest.Mock).mockResolvedValue("test-thumbnail.jpg");
+
+      // Reset mocks between tests
+      jest.clearAllMocks();
+    });
+
+    it("should create a new book successfully", async () => {
+      // Arrange
+      const userId = new Types.ObjectId();
+      const genreIds = [
+        { _id: new Types.ObjectId() },
+        { _id: new Types.ObjectId() },
+      ];
+      const mockFile = createMockFile("test-book.pdf");
+
+      mockRequest = {
+        body: {
+          title: "Test Book",
+          description: "Test Description",
+          author: "Test Author",
+          year: "2023",
+          genres: ["Fiction", "Thriller"],
+        },
+        files: [mockFile],
+        user: { _id: userId },
+      };
+
+      // Mock the chained method Genre.find().select()
+      const mockSelectFn = jest.fn().mockResolvedValue(genreIds);
+      const mockFindFn = jest.fn().mockReturnValue({ select: mockSelectFn });
+      (Genre.find as jest.Mock).mockImplementation(mockFindFn);
+
+      const mockSavedBook = {
+        _id: new Types.ObjectId(),
+        title: "Test Book",
+        author: "Test Author",
+      };
+
+      (Book.prototype.save as jest.Mock) = jest
+        .fn()
+        .mockResolvedValue(mockSavedBook);
+
+      // Act
+      await bookController.createBook(
+        mockRequest as any,
+        mockResponse as Response
+      );
+
+      // Assert
+      expect(Genre.find).toHaveBeenCalledWith({
+        name: { $in: ["Fiction", "Thriller"] },
+      });
+      expect(mockSelectFn).toHaveBeenCalledWith("_id");
+      expect(Book.prototype.save).toHaveBeenCalled();
+      expect(generateThumbnail).toHaveBeenCalledWith(
+        "test-book.pdf",
+        "test-book"
+      );
+      expect(mockResponse.status).toHaveBeenCalledWith(201);
+      expect(mockResponse.json).toHaveBeenCalledWith(mockSavedBook);
+    });
+
+    it("should return 400 if title is missing", async () => {
+      // Arrange
+      const mockFile = createMockFile("test-book.pdf");
+      mockRequest = {
+        body: {
+          description: "Test Description",
+          author: "Test Author",
+          year: "2023",
+          genres: ["Fiction"],
+        },
+        files: [mockFile],
+        user: { _id: new Types.ObjectId() },
+      };
+
+      // Act
+      await bookController.createBook(
+        mockRequest as any,
+        mockResponse as Response
+      );
+
+      // Assert
+      expect(mockResponse.status).toHaveBeenCalledWith(400);
+      expect(mockResponse.json).toHaveBeenCalledWith({
+        message: "All fields are required",
+      });
+      expect(Book.prototype.save).not.toHaveBeenCalled();
+    });
+
+    it("should return 400 when some genres are invalid", async () => {
+      // Arrange
+      const mockFile = createMockFile("test-book.pdf");
+      mockRequest = {
+        body: {
+          title: "Test Book",
+          description: "Test Description",
+          author: "Test Author",
+          year: "2023",
+          genres: ["Fiction", "InvalidGenre"],
+        },
+        files: [mockFile],
+        user: { _id: new Types.ObjectId() },
+      };
+
+      // Only one genre is found, not both - mocking the find().select() chain
+      const mockSelectFn = jest
+        .fn()
+        .mockResolvedValue([{ _id: new Types.ObjectId() }]);
+      const mockFindFn = jest.fn().mockReturnValue({ select: mockSelectFn });
+      (Genre.find as jest.Mock).mockImplementation(mockFindFn);
+
+      // Act
+      await bookController.createBook(
+        mockRequest as any,
+        mockResponse as Response
+      );
+
+      // Assert
+      expect(mockResponse.status).toHaveBeenCalledWith(400);
+      expect(mockResponse.json).toHaveBeenCalledWith({
+        message: "Some genres are invalid",
+      });
+      expect(Book.prototype.save).not.toHaveBeenCalled();
+    });
+
+    it("should return 400 if no file is uploaded", async () => {
+      // Arrange
+      mockRequest = {
+        body: {
+          title: "Test Book",
+          description: "Test Description",
+          author: "Test Author",
+          year: "2023",
+          genres: ["Fiction"],
+        },
+        files: [], // Empty files array
+        user: { _id: new Types.ObjectId() },
+      };
+
+      // Act
+      await bookController.createBook(
+        mockRequest as any,
+        mockResponse as Response
+      );
+
+      // Assert
+      expect(mockResponse.status).toHaveBeenCalledWith(400);
+      expect(mockResponse.json).toHaveBeenCalledWith({
+        message: "File is required",
+      });
+      expect(Book.prototype.save).not.toHaveBeenCalled();
+    });
+
+    it("should handle error during genre validation", async () => {
+      // Arrange
+      const mockFile = createMockFile("test-book.pdf");
+      mockRequest = {
+        body: {
+          title: "Test Book",
+          description: "Test Description",
+          author: "Test Author",
+          year: "2023",
+          genres: ["Fiction"],
+        },
+        files: [mockFile],
+        user: { _id: new Types.ObjectId() },
+      };
+
+      // Mock an error in the find().select() chain
+      const mockSelectFn = jest
+        .fn()
+        .mockRejectedValue(new Error("Database error"));
+      const mockFindFn = jest.fn().mockReturnValue({ select: mockSelectFn });
+      (Genre.find as jest.Mock).mockImplementation(mockFindFn);
+
+      // Act
+      await bookController.createBook(
+        mockRequest as any,
+        mockResponse as Response
+      );
+
+      // Assert
+      expect(mockResponse.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          message: "Error creating book",
+          error: expect.any(Error),
+        })
+      );
+    });
+
+    it("should handle error when generating thumbnail", async () => {
+      // Arrange
+      const userId = new Types.ObjectId();
+      const mockFile = createMockFile("test-book.pdf");
+      mockRequest = {
+        body: {
+          title: "Test Book",
+          description: "Test Description",
+          author: "Test Author",
+          year: "2023",
+          genres: ["Fiction"],
+        },
+        files: [mockFile],
+        user: { _id: userId },
+      };
+
+      // Mock the chained method for Genre.find().select()
+      const mockSelectFn = jest
+        .fn()
+        .mockResolvedValue([{ _id: new Types.ObjectId() }]);
+      const mockFindFn = jest.fn().mockReturnValue({ select: mockSelectFn });
+      (Genre.find as jest.Mock).mockImplementation(mockFindFn);
+
+      // Mock thumbnail generation failure
+      (generateThumbnail as jest.Mock).mockRejectedValue(
+        new Error("Thumbnail generation failed")
+      );
+
+      // Act
+      await bookController.createBook(
+        mockRequest as any,
+        mockResponse as Response
+      );
+
+      // Assert
+      expect(mockResponse.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          message: "Error creating book",
+          error: expect.any(Error),
+        })
+      );
+      expect(Book.prototype.save).not.toHaveBeenCalled();
+    });
+
+    it("should handle error when saving the book", async () => {
+      // Arrange
+      const userId = new Types.ObjectId();
+      const mockFile = createMockFile("test-book.pdf");
+      mockRequest = {
+        body: {
+          title: "Test Book",
+          description: "Test Description",
+          author: "Test Author",
+          year: "2023",
+          genres: ["Fiction"],
+        },
+        files: [mockFile],
+        user: { _id: userId },
+      };
+
+      // Mock the chained method for Genre.find().select()
+      const mockSelectFn = jest
+        .fn()
+        .mockResolvedValue([{ _id: new Types.ObjectId() }]);
+      const mockFindFn = jest.fn().mockReturnValue({ select: mockSelectFn });
+      (Genre.find as jest.Mock).mockImplementation(mockFindFn);
+
+      // Mock thumbnail generation success
+      (generateThumbnail as jest.Mock).mockResolvedValue("test-thumbnail.jpg");
+
+      // Mock book save failure
+      (Book.prototype.save as jest.Mock) = jest
+        .fn()
+        .mockRejectedValue(new Error("Database error"));
+
+      // Act
+      await bookController.createBook(
+        mockRequest as any,
+        mockResponse as Response
+      );
+
+      // Assert
+      expect(mockResponse.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          message: "Error creating book",
+          error: expect.any(Error),
+        })
+      );
     });
   });
 });

@@ -174,6 +174,11 @@ export const createBook = async (req: ICreateBookRequest, res: Response) => {
 
     console.log(req.body);
 
+    if (!req.files || req.files.length === 0) {
+      res.status(400).json({ message: "File is required" });
+      return;
+    }
+
     // Validate required fields
     if (
       !title ||
@@ -190,11 +195,6 @@ export const createBook = async (req: ICreateBookRequest, res: Response) => {
     const genreIds = await Genre.find({ name: { $in: genres } }).select("_id");
     if (genreIds.length !== genres.length) {
       res.status(400).json({ message: "Some genres are invalid" });
-      return;
-    }
-
-    if (!req.files || req.files.length === 0) {
-      res.status(400).json({ message: "File is required" });
       return;
     }
 
