@@ -205,4 +205,61 @@ describe("User Controller", () => {
       });
     });
   });
+
+  describe("login", () => {
+    it("should successfully login and return token", async () => {
+      // Arrange
+      const mockUser = {
+        _id: new mongoose.Types.ObjectId(),
+        username: "testuser",
+        email: "test@example.com",
+      };
+
+      mockRequest.user = mockUser;
+
+      const mockToken = "mock-login-jwt-token";
+      (createToken as jest.Mock).mockReturnValue(mockToken);
+
+      // Act
+      await userController.login(mockRequest as any, mockResponse as Response);
+
+      // Assert
+      expect(createToken).toHaveBeenCalledWith({
+        userId: mockUser._id.toString(),
+        username: mockUser.username,
+        email: mockUser.email,
+      });
+      expect(mockResponse.json).toHaveBeenCalledWith({ token: mockToken });
+    });
+
+    it("should return 401 when user is not authenticated", async () => {
+      // Arrange
+      mockRequest.user = null;
+
+      // Act
+      await userController.login(mockRequest as any, mockResponse as Response);
+
+      // Assert
+      expect(mockResponse.status).toHaveBeenCalledWith(401);
+      expect(mockResponse.json).toHaveBeenCalledWith({
+        message: "Authentication failed",
+      });
+      expect(createToken).not.toHaveBeenCalled();
+    });
+
+    it("should return 401 when user is undefined", async () => {
+      // Arrange
+      mockRequest.user = undefined;
+
+      // Act
+      await userController.login(mockRequest as any, mockResponse as Response);
+
+      // Assert
+      expect(mockResponse.status).toHaveBeenCalledWith(401);
+      expect(mockResponse.json).toHaveBeenCalledWith({
+        message: "Authentication failed",
+      });
+      expect(createToken).not.toHaveBeenCalled();
+    });
+  });
 });
