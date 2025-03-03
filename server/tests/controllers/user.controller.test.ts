@@ -262,4 +262,46 @@ describe("User Controller", () => {
       expect(createToken).not.toHaveBeenCalled();
     });
   });
+
+  describe("info", () => {
+    it("should return the user object from the request", async () => {
+      // Arrange
+      const mockUser = {
+        _id: new mongoose.Types.ObjectId(),
+        username: "testuser",
+        email: "test@example.com",
+        role: "user",
+      };
+
+      mockRequest.user = mockUser;
+
+      // Act
+      await userController.info(mockRequest as any, mockResponse as Response);
+
+      // Assert
+      expect(mockResponse.json).toHaveBeenCalledWith(mockUser);
+    });
+
+    it("should return empty response if user is not defined", async () => {
+      // Arrange
+      mockRequest.user = undefined;
+
+      // Act
+      await userController.info(mockRequest as any, mockResponse as Response);
+
+      // Assert
+      expect(mockResponse.json).toHaveBeenCalledWith(undefined);
+    });
+
+    it("should return null if user is null", async () => {
+      // Arrange
+      mockRequest.user = null;
+
+      // Act
+      await userController.info(mockRequest as any, mockResponse as Response);
+
+      // Assert
+      expect(mockResponse.json).toHaveBeenCalledWith(null);
+    });
+  });
 });
