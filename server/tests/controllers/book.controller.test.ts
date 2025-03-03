@@ -1197,4 +1197,455 @@ describe("Book Controller", () => {
       );
     });
   });
+
+  describe("updateBook", () => {
+    beforeEach(() => {
+      // Reset mocks
+      jest.clearAllMocks();
+
+      // Set up default mock responses
+      (generateThumbnail as jest.Mock).mockResolvedValue(
+        "new-test-thumbnail.jpg"
+      );
+      (deleteFile as jest.Mock).mockImplementation(() => {});
+    });
+
+    it("should successfully update a book without file upload", async () => {
+      // Arrange
+      const bookId = new Types.ObjectId();
+      const userId = new Types.ObjectId();
+
+      const mockBook = {
+        _id: bookId,
+        title: "Original Title",
+        description: "Original Description",
+        author: "Original Author",
+        year: "2022",
+        genres: [new Types.ObjectId()],
+        bookFileName: "original-book.pdf",
+        thumbnailFileName: "original-thumbnail.jpg",
+        user: userId,
+        save: jest.fn().mockResolvedValue({
+          _id: bookId,
+          title: "Updated Title",
+          description: "Updated Description",
+          author: "Updated Author",
+          year: "2023",
+        }),
+      };
+
+      mockRequest = {
+        params: { id: bookId.toString() },
+        body: {
+          title: "Updated Title",
+          description: "Updated Description",
+          author: "Updated Author",
+          year: "2023",
+          genres: ["Fiction", "Drama"],
+        },
+        user: { _id: userId },
+        files: [],
+      };
+
+      (Book.findById as jest.Mock).mockResolvedValue(mockBook);
+
+      // Mock genre lookup
+      const mockGenreIds = [
+        { _id: new Types.ObjectId() },
+        { _id: new Types.ObjectId() },
+      ];
+      const mockSelectFn = jest.fn().mockResolvedValue(mockGenreIds);
+      const mockFindFn = jest.fn().mockReturnValue({ select: mockSelectFn });
+      (Genre.find as jest.Mock).mockImplementation(mockFindFn);
+
+      // Act
+      await bookController.updateBook(
+        mockRequest as any,
+        mockResponse as Response
+      );
+
+      // Assert
+      expect(Book.findById).toHaveBeenCalledWith(bookId.toString());
+      expect(Genre.find).toHaveBeenCalledWith({
+        name: { $in: ["Fiction", "Drama"] },
+      });
+      expect(mockSelectFn).toHaveBeenCalledWith("_id");
+      expect(mockBook.save).toHaveBeenCalled();
+      expect(mockBook.title).toBe("Updated Title");
+      expect(mockBook.description).toBe("Updated Description");
+      expect(mockBook.author).toBe("Updated Author");
+      expect(mockBook.year).toBe("2023");
+      expect(mockResponse.json).toHaveBeenCalledWith(mockBook);
+      // Ensure no file manipulation was done
+      expect(generateThumbnail).not.toHaveBeenCalled();
+      expect(deleteFile).not.toHaveBeenCalled();
+    });
+
+    it("should update a book with a new file upload", async () => {
+      // Arrange
+      const bookId = new Types.ObjectId();
+      const userId = new Types.ObjectId();
+      const mockFile = createMockFile("new-book.pdf");
+
+      const mockBook = {
+        _id: bookId,
+        title: "Original Title",
+        description: "Original Description",
+        author: "Original Author",
+        year: "2022",
+        genres: [new Types.ObjectId()],
+        bookFileName: "original-book.pdf",
+        thumbnailFileName: "original-thumbnail.jpg",
+        user: userId,
+        save: jest.fn().mockResolvedValue({
+          _id: bookId,
+          title: "Updated Title",
+          bookFileName: "new-book.pdf",
+          thumbnailFileName: "new-test-thumbnail.jpg",
+        }),
+      };
+
+      mockRequest = {
+        params: { id: bookId.toString() },
+        body: {
+          title: "Updated Title",
+          genres: ["Fiction"],
+        },
+        user: { _id: userId },
+        files: [mockFile],
+      };
+
+      (Book.findById as jest.Mock).mockResolvedValue(mockBook);
+
+      // Mock genre lookup
+      const mockGenreIds = [{ _id: new Types.ObjectId() }];
+      const mockSelectFn = jest.fn().mockResolvedValue(mockGenreIds);
+      (Genre.find as jest.Mock).mockReturnValue({ select: mockSelectFn });
+
+      // Act
+      await bookController.updateBook(
+        mockRequest as any,
+        mockResponse as Response
+      );
+
+      // Assert
+      expect(generateThumbnail).toHaveBeenCalledWith(
+        "new-book.pdf",
+        "new-book"
+      );
+      expect(deleteFile).toHaveBeenCalledTimes(2);
+      expect(deleteFile).toHaveBeenNthCalledWith(
+        1,
+        path.join(uploadedBooksPath, "original-book.pdf")
+      );
+      expect(deleteFile).toHaveBeenNthCalledWith(
+        2,
+        path.join(uploadedThumbnailsPath, "original-thumbnail.jpg")
+      );
+      expect(mockBook.bookFileName).toBe("new-book.pdf");
+      expect(mockBook.thumbnailFileName).toBe("new-test-thumbnail.jpg");
+      expect(mockResponse.json).toHaveBeenCalledWith(mockBook);
+    });
+
+    it("should return 404 when book is not found", async () => {
+      // Arrange
+      const bookId = new Types.ObjectId();
+      mockRequest = {
+        params: { id: bookId.toString() },
+        body: { title: "Updated Title" },
+        user: { _id: new Types.ObjectId() },
+      };
+
+      (Book.findById as jest.Mock).mockResolvedValue(null);
+
+      // Act
+      await bookController.updateBook(
+        mockRequest as any,
+        mockResponse as Response
+      );
+
+      // Assert
+      expect(mockResponse.status).toHaveBeenCalledWith(404);
+      expect(mockResponse.json).toHaveBeenCalledWith({
+        message: "Book not found",
+      });
+    });
+
+    it("should return 403 when user is not the owner", async () => {
+      // Arrange
+      const bookId = new Types.ObjectId();
+      const bookOwnerId = new Types.ObjectId();
+      const requestUserId = new Types.ObjectId(); // Different user ID
+
+      const mockBook = {
+        _id: bookId,
+        title: "Original Title",
+        user: bookOwnerId,
+        save: jest.fn(),
+      };
+
+      mockRequest = {
+        params: { id: bookId.toString() },
+        body: { title: "Updated Title" },
+        user: { _id: requestUserId }, // Different user tries to update
+      };
+
+      (Book.findById as jest.Mock).mockResolvedValue(mockBook);
+
+      // Act
+      await bookController.updateBook(
+        mockRequest as any,
+        mockResponse as Response
+      );
+
+      // Assert
+      expect(mockResponse.status).toHaveBeenCalledWith(403);
+      expect(mockResponse.json).toHaveBeenCalledWith({
+        message: "Unauthorized",
+      });
+      expect(mockBook.save).not.toHaveBeenCalled();
+    });
+
+    it("should return 400 when genres are invalid", async () => {
+      // Arrange
+      const bookId = new Types.ObjectId();
+      const userId = new Types.ObjectId();
+
+      const mockBook = {
+        _id: bookId,
+        title: "Original Title",
+        user: userId,
+        save: jest.fn(),
+      };
+
+      mockRequest = {
+        params: { id: bookId.toString() },
+        body: {
+          title: "Updated Title",
+          genres: ["Fiction", "InvalidGenre"],
+        },
+        user: { _id: userId },
+      };
+
+      (Book.findById as jest.Mock).mockResolvedValue(mockBook);
+
+      // Mock finding only one valid genre out of two requested
+      const mockSelectFn = jest
+        .fn()
+        .mockResolvedValue([{ _id: new Types.ObjectId() }]);
+      (Genre.find as jest.Mock).mockReturnValue({ select: mockSelectFn });
+
+      // Act
+      await bookController.updateBook(
+        mockRequest as any,
+        mockResponse as Response
+      );
+
+      // Assert
+      expect(mockResponse.status).toHaveBeenCalledWith(400);
+      expect(mockResponse.json).toHaveBeenCalledWith({
+        message: "Some genres are invalid",
+      });
+      expect(mockBook.save).not.toHaveBeenCalled();
+    });
+
+    it("should handle errors when finding book", async () => {
+      // Arrange
+      mockRequest = {
+        params: { id: new Types.ObjectId().toString() },
+        body: { title: "Updated Title" },
+        user: { _id: new Types.ObjectId() },
+      };
+
+      const error = new Error("Database error");
+      (Book.findById as jest.Mock).mockRejectedValue(error);
+
+      // Act
+      await bookController.updateBook(
+        mockRequest as any,
+        mockResponse as Response
+      );
+
+      // Assert
+      expect(mockResponse.json).toHaveBeenCalledWith({
+        message: "Error updating book",
+        error,
+      });
+    });
+
+    it("should handle errors when generating thumbnail", async () => {
+      // Arrange
+      const bookId = new Types.ObjectId();
+      const userId = new Types.ObjectId();
+      const mockFile = createMockFile("new-book.pdf");
+
+      const mockBook = {
+        _id: bookId,
+        title: "Original Title",
+        bookFileName: "original-book.pdf",
+        thumbnailFileName: "original-thumbnail.jpg",
+        user: userId,
+        save: jest.fn(),
+      };
+
+      mockRequest = {
+        params: { id: bookId.toString() },
+        body: { title: "Updated Title", genres: ["Fiction"] },
+        user: { _id: userId },
+        files: [mockFile],
+      };
+
+      (Book.findById as jest.Mock).mockResolvedValue(mockBook);
+      (Genre.find as jest.Mock).mockReturnValue({
+        select: jest.fn().mockResolvedValue([{ _id: new Types.ObjectId() }]),
+      });
+
+      // Mock thumbnail generation error
+      const error = new Error("Thumbnail generation failed");
+      (generateThumbnail as jest.Mock).mockRejectedValue(error);
+
+      // Act
+      await bookController.updateBook(
+        mockRequest as any,
+        mockResponse as Response
+      );
+
+      // Assert
+      expect(mockResponse.json).toHaveBeenCalledWith({
+        message: "Error updating book",
+        error,
+      });
+      expect(mockBook.save).not.toHaveBeenCalled();
+    });
+
+    it("should handle errors when validating genres", async () => {
+      // Arrange
+      const bookId = new Types.ObjectId();
+      const userId = new Types.ObjectId();
+
+      const mockBook = {
+        _id: bookId,
+        title: "Original Title",
+        user: userId,
+        save: jest.fn(),
+      };
+
+      mockRequest = {
+        params: { id: bookId.toString() },
+        body: { title: "Updated Title", genres: ["Fiction"] },
+        user: { _id: userId },
+      };
+
+      (Book.findById as jest.Mock).mockResolvedValue(mockBook);
+
+      // Mock genre validation error
+      const error = new Error("Genre validation failed");
+      (Genre.find as jest.Mock).mockReturnValue({
+        select: jest.fn().mockRejectedValue(error),
+      });
+
+      // Act
+      await bookController.updateBook(
+        mockRequest as any,
+        mockResponse as Response
+      );
+
+      // Assert
+      expect(mockResponse.json).toHaveBeenCalledWith({
+        message: "Error updating book",
+        error,
+      });
+      expect(mockBook.save).not.toHaveBeenCalled();
+    });
+
+    it("should handle errors when saving the book", async () => {
+      // Arrange
+      const bookId = new Types.ObjectId();
+      const userId = new Types.ObjectId();
+
+      const error = new Error("Save failed");
+      const mockBook = {
+        _id: bookId,
+        title: "Original Title",
+        user: userId,
+        save: jest.fn().mockRejectedValue(error),
+      };
+
+      mockRequest = {
+        params: { id: bookId.toString() },
+        body: { title: "Updated Title", genres: ["Fiction"] },
+        user: { _id: userId },
+      };
+
+      (Book.findById as jest.Mock).mockResolvedValue(mockBook);
+      (Genre.find as jest.Mock).mockReturnValue({
+        select: jest.fn().mockResolvedValue([{ _id: new Types.ObjectId() }]),
+      });
+
+      // Act
+      await bookController.updateBook(
+        mockRequest as any,
+        mockResponse as Response
+      );
+
+      // Assert
+      expect(mockResponse.json).toHaveBeenCalledWith({
+        message: "Error updating book",
+        error,
+      });
+    });
+
+    it("should handle partial updates with only one field", async () => {
+      // Arrange
+      const bookId = new Types.ObjectId();
+      const userId = new Types.ObjectId();
+
+      const mockBook = {
+        _id: bookId,
+        title: "Original Title",
+        description: "Original Description",
+        author: "Original Author",
+        year: "2022",
+        genres: [new Types.ObjectId()],
+        bookFileName: "original-book.pdf",
+        thumbnailFileName: "original-thumbnail.jpg",
+        user: userId,
+        save: jest.fn().mockResolvedValue({
+          _id: bookId,
+          title: "Updated Title",
+          description: "Original Description", // Should remain unchanged
+          author: "Original Author", // Should remain unchanged
+          year: "2022", // Should remain unchanged
+        }),
+      };
+
+      mockRequest = {
+        params: { id: bookId.toString() },
+        body: {
+          title: "Updated Title",
+          // No other fields provided
+        },
+        user: { _id: userId },
+        files: [],
+      };
+
+      (Book.findById as jest.Mock).mockResolvedValue(mockBook);
+
+      // Act
+      await bookController.updateBook(
+        mockRequest as any,
+        mockResponse as Response
+      );
+
+      // Assert
+      expect(Book.findById).toHaveBeenCalledWith(bookId.toString());
+      expect(mockBook.save).toHaveBeenCalled();
+      expect(mockBook.title).toBe("Updated Title");
+      // Verify other fields remain unchanged
+      expect(mockBook.description).toBe("Original Description");
+      expect(mockBook.author).toBe("Original Author");
+      expect(mockBook.year).toBe("2022");
+      expect(mockResponse.json).toHaveBeenCalledWith(mockBook);
+    });
+  });
 });

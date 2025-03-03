@@ -268,7 +268,7 @@ export const updateBook = async (req: ICreateBookRequest, res: Response) => {
     }
 
     const genreIds = await Genre.find({ name: { $in: genres } }).select("_id");
-    if (genreIds.length !== genres.length) {
+    if (genres && genreIds.length !== genres.length) {
       res.status(400).json({ message: "Some genres are invalid" });
       return;
     }
