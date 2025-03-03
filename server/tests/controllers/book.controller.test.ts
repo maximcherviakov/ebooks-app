@@ -801,4 +801,52 @@ describe("Book Controller", () => {
       });
     });
   });
+
+  describe("getBookFile", () => {
+    it("should send the book file", async () => {
+      // Arrange
+      const bookName = "test-book.pdf";
+      mockRequest.params = { bookName };
+
+      // Act
+      await bookController.getBookFile(
+        mockRequest as Request,
+        mockResponse as Response
+      );
+
+      // Assert
+      expect(mockResponse.sendFile).toHaveBeenCalledWith(
+        path.join(process.cwd(), uploadedBooksPath, bookName)
+      );
+      expect(path.join).toHaveBeenCalledWith(
+        process.cwd(),
+        uploadedBooksPath,
+        bookName
+      );
+    });
+
+    it("should return 500 when an error occurs", async () => {
+      // Arrange
+      const bookName = "test-book.pdf";
+      mockRequest.params = { bookName };
+
+      const error = new Error("File not found");
+      mockResponse.sendFile = jest.fn().mockImplementation(() => {
+        throw error;
+      });
+
+      // Act
+      await bookController.getBookFile(
+        mockRequest as Request,
+        mockResponse as Response
+      );
+
+      // Assert
+      expect(mockResponse.status).toHaveBeenCalledWith(500);
+      expect(mockResponse.json).toHaveBeenCalledWith({
+        message: "Error fetching book file",
+        error,
+      });
+    });
+  });
 });
