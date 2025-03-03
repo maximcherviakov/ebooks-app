@@ -304,4 +304,206 @@ describe("User Controller", () => {
       expect(mockResponse.json).toHaveBeenCalledWith(null);
     });
   });
+
+  describe("resetPassword", () => {
+    it("should successfully reset password", async () => {
+      // Arrange
+      const userId = new mongoose.Types.ObjectId();
+      const mockUser = {
+        _id: userId,
+        password: "oldPassword123",
+        comparePassword: jest.fn().mockResolvedValue(true),
+        save: jest.fn().mockResolvedValue(true),
+      };
+
+      mockRequest.user = { _id: userId };
+      mockRequest.body = {
+        currentPassword: "oldPassword123",
+        newPassword: "newPassword456",
+      };
+
+      (User.findById as jest.Mock).mockResolvedValue(mockUser);
+
+      // Act
+      await userController.resetPassword(
+        mockRequest as any,
+        mockResponse as Response
+      );
+
+      // Assert
+      expect(User.findById).toHaveBeenCalledWith(userId);
+      expect(mockUser.comparePassword).toHaveBeenCalledWith("oldPassword123");
+      expect(mockUser.password).toBe("newPassword456"); // Check if password was updated
+      expect(mockUser.save).toHaveBeenCalled();
+      expect(mockResponse.status).toHaveBeenCalledWith(200);
+      expect(mockResponse.json).toHaveBeenCalledWith({
+        message: "Password updated successfully",
+      });
+    });
+
+    it("should return 400 when currentPassword is missing", async () => {
+      // Arrange
+      mockRequest.user = { _id: new mongoose.Types.ObjectId() };
+      mockRequest.body = { newPassword: "newPassword456" };
+
+      // Act
+      await userController.resetPassword(
+        mockRequest as any,
+        mockResponse as Response
+      );
+
+      // Assert
+      expect(mockResponse.status).toHaveBeenCalledWith(400);
+      expect(mockResponse.json).toHaveBeenCalledWith({
+        message: "Current and new password are required",
+      });
+    });
+
+    it("should return 400 when newPassword is missing", async () => {
+      // Arrange
+      mockRequest.user = { _id: new mongoose.Types.ObjectId() };
+      mockRequest.body = { currentPassword: "oldPassword123" };
+
+      // Act
+      await userController.resetPassword(
+        mockRequest as any,
+        mockResponse as Response
+      );
+
+      // Assert
+      expect(mockResponse.status).toHaveBeenCalledWith(400);
+      expect(mockResponse.json).toHaveBeenCalledWith({
+        message: "Current and new password are required",
+      });
+    });
+
+    it("should return 400 when newPassword is too short", async () => {
+      // Arrange
+      mockRequest.user = { _id: new mongoose.Types.ObjectId() };
+      mockRequest.body = {
+        currentPassword: "oldPassword123",
+        newPassword: "short", // Less than 6 characters
+      };
+
+      // Act
+      await userController.resetPassword(
+        mockRequest as any,
+        mockResponse as Response
+      );
+
+      // Assert
+      expect(mockResponse.status).toHaveBeenCalledWith(400);
+      expect(mockResponse.json).toHaveBeenCalledWith({
+        message: "New password must be at least 6 characters long",
+      });
+    });
+
+    it("should return 404 when user is not found", async () => {
+      // Arrange
+      const userId = new mongoose.Types.ObjectId();
+      mockRequest.user = { _id: userId };
+      mockRequest.body = {
+        currentPassword: "oldPassword123",
+        newPassword: "newPassword456",
+      };
+
+      (User.findById as jest.Mock).mockResolvedValue(null);
+
+      // Act
+      await userController.resetPassword(
+        mockRequest as any,
+        mockResponse as Response
+      );
+
+      // Assert
+      expect(User.findById).toHaveBeenCalledWith(userId);
+      expect(mockResponse.status).toHaveBeenCalledWith(404);
+      expect(mockResponse.json).toHaveBeenCalledWith({
+        message: "User not found",
+      });
+    });
+
+    it("should return 403 when user is authenticated via third-party provider", async () => {
+      // Arrange
+      const mockUser = {
+        _id: new mongoose.Types.ObjectId(),
+        googleId: "google-123456",
+        comparePassword: jest.fn(),
+      };
+
+      mockRequest.user = { _id: mockUser._id };
+      mockRequest.body = {
+        currentPassword: "oldPassword123",
+        newPassword: "newPassword456",
+      };
+
+      (User.findById as jest.Mock).mockResolvedValue(mockUser);
+
+      // Act
+      await userController.resetPassword(
+        mockRequest as any,
+        mockResponse as Response
+      );
+
+      // Assert
+      expect(mockResponse.status).toHaveBeenCalledWith(403);
+      expect(mockResponse.json).toHaveBeenCalledWith({
+        message:
+          "Password reset is not available for accounts using third-party authentication",
+      });
+    });
+
+    it("should return 401 when current password is incorrect", async () => {
+      // Arrange
+      const mockUser = {
+        _id: new mongoose.Types.ObjectId(),
+        comparePassword: jest.fn().mockResolvedValue(false),
+      };
+
+      mockRequest.user = { _id: mockUser._id };
+      mockRequest.body = {
+        currentPassword: "wrongPassword",
+        newPassword: "newPassword456",
+      };
+
+      (User.findById as jest.Mock).mockResolvedValue(mockUser);
+
+      // Act
+      await userController.resetPassword(
+        mockRequest as any,
+        mockResponse as Response
+      );
+
+      // Assert
+      expect(mockUser.comparePassword).toHaveBeenCalledWith("wrongPassword");
+      expect(mockResponse.status).toHaveBeenCalledWith(401);
+      expect(mockResponse.json).toHaveBeenCalledWith({
+        message: "Current password is incorrect",
+      });
+    });
+
+    it("should return 500 when an unexpected error occurs", async () => {
+      // Arrange
+      mockRequest.user = { _id: new mongoose.Types.ObjectId() };
+      mockRequest.body = {
+        currentPassword: "oldPassword123",
+        newPassword: "newPassword456",
+      };
+
+      const error = new Error("Database error");
+      (User.findById as jest.Mock).mockRejectedValue(error);
+
+      // Act
+      await userController.resetPassword(
+        mockRequest as any,
+        mockResponse as Response
+      );
+
+      // Assert
+      expect(mockResponse.status).toHaveBeenCalledWith(500);
+      expect(mockResponse.json).toHaveBeenCalledWith({
+        message: "Internal server error",
+      });
+    });
+  });
 });
