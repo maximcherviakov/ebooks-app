@@ -21,6 +21,10 @@ jest.mock("../../src/models/book.model");
 jest.mock("../../src/models/genre.model");
 jest.mock("../../src/utils/generateThumbnail");
 jest.mock("../../src/utils/FileHelper");
+jest.mock("../../src/config/envconfig", () => ({
+  uploadedBooksPath: "test-books-path",
+  uploadedThumbnailsPath: "test-thumbnails-path",
+}));
 jest.mock("path", () => ({
   resolve: jest.fn().mockReturnValue("/mocked/path"),
   join: jest.fn().mockImplementation((...args) => args.join("/")),
@@ -738,6 +742,63 @@ describe("Book Controller", () => {
           error: expect.any(Error),
         })
       );
+    });
+  });
+
+  describe("getBookThumbnail", () => {
+    it("should send the thumbnail file", async () => {
+      // Arrange
+      const thumbnailName = "test-thumbnail.jpg";
+      mockRequest.params = { thumbnailName };
+
+      // Act
+      await bookController.getBookThumbnail(
+        mockRequest as Request,
+        mockResponse as Response
+      );
+
+      console.log(
+        path
+          .join(process.cwd(), uploadedThumbnailsPath, thumbnailName)
+          .toString()
+      );
+      console.log(process.cwd());
+      console.log(uploadedThumbnailsPath);
+      console.log(thumbnailName);
+
+      // Assert
+      expect(mockResponse.sendFile).toHaveBeenCalledWith(
+        path.join(process.cwd(), uploadedThumbnailsPath, thumbnailName)
+      );
+      expect(path.join).toHaveBeenCalledWith(
+        process.cwd(),
+        uploadedThumbnailsPath,
+        thumbnailName
+      );
+    });
+
+    it("should return 500 when an error occurs", async () => {
+      // Arrange
+      const thumbnailName = "test-thumbnail.jpg";
+      mockRequest.params = { thumbnailName };
+
+      const error = new Error("File not found");
+      mockResponse.sendFile = jest.fn().mockImplementation(() => {
+        throw error;
+      });
+
+      // Act
+      await bookController.getBookThumbnail(
+        mockRequest as Request,
+        mockResponse as Response
+      );
+
+      // Assert
+      expect(mockResponse.status).toHaveBeenCalledWith(500);
+      expect(mockResponse.json).toHaveBeenCalledWith({
+        message: "Error fetching thumbnail",
+        error,
+      });
     });
   });
 });
