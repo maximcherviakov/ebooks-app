@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import mongoose, { Types } from "mongoose";
+import { Types } from "mongoose";
 import path from "path";
 import Book from "../../src/models/book.model";
 import Genre from "../../src/models/genre.model";
@@ -10,11 +10,7 @@ import {
   uploadedBooksPath,
   uploadedThumbnailsPath,
 } from "../../src/config/envconfig";
-import { DEFAULT_LIMIT, DEFAULT_PAGE } from "../../src/config/consts";
-
-// filepath: server/src/controllers/book.controller.test.ts
-
-// Import models, utils, and controller functions
+import { DEFAULT_PAGE } from "../../src/config/consts";
 
 // Mock dependencies
 jest.mock("../../src/models/book.model");
