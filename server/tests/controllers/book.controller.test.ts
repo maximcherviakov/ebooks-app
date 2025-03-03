@@ -1648,4 +1648,215 @@ describe("Book Controller", () => {
       expect(mockResponse.json).toHaveBeenCalledWith(mockBook);
     });
   });
+
+  describe("deleteBook", () => {
+    it("should successfully delete a book when user is owner", async () => {
+      // Arrange
+      const bookId = new Types.ObjectId();
+      const userId = new Types.ObjectId();
+      const bookFileName = "test-book.pdf";
+      const thumbnailFileName = "test-thumbnail.jpg";
+
+      const mockBook = {
+        _id: bookId,
+        title: "Book to Delete",
+        bookFileName,
+        thumbnailFileName,
+        user: userId,
+        deleteOne: jest.fn().mockResolvedValue({}),
+      };
+
+      mockRequest = {
+        params: { id: bookId.toString() },
+        user: { _id: userId },
+      };
+
+      (Book.findById as jest.Mock).mockResolvedValue(mockBook);
+
+      // Act
+      await bookController.deleteBook(
+        mockRequest as any,
+        mockResponse as Response
+      );
+
+      // Assert
+      expect(Book.findById).toHaveBeenCalledWith(bookId.toString());
+      expect(deleteFile).toHaveBeenCalledTimes(2);
+      expect(deleteFile).toHaveBeenNthCalledWith(
+        1,
+        path.join(uploadedBooksPath, bookFileName)
+      );
+      expect(deleteFile).toHaveBeenNthCalledWith(
+        2,
+        path.join(uploadedThumbnailsPath, thumbnailFileName)
+      );
+      expect(mockBook.deleteOne).toHaveBeenCalled();
+      expect(mockResponse.json).toHaveBeenCalledWith({
+        message: "Book deleted successfully",
+      });
+    });
+
+    it("should return 404 when book is not found", async () => {
+      // Arrange
+      const bookId = new Types.ObjectId().toString();
+      mockRequest = {
+        params: { id: bookId },
+        user: { _id: new Types.ObjectId() },
+      };
+
+      (Book.findById as jest.Mock).mockResolvedValue(null);
+
+      // Act
+      await bookController.deleteBook(
+        mockRequest as any,
+        mockResponse as Response
+      );
+
+      // Assert
+      expect(mockResponse.status).toHaveBeenCalledWith(404);
+      expect(mockResponse.json).toHaveBeenCalledWith({
+        message: "Book not found",
+      });
+      expect(deleteFile).not.toHaveBeenCalled();
+    });
+
+    it("should return 403 when user is not the owner", async () => {
+      // Arrange
+      const bookId = new Types.ObjectId();
+      const bookOwnerId = new Types.ObjectId();
+      const requestUserId = new Types.ObjectId(); // Different user ID
+
+      const mockBook = {
+        _id: bookId,
+        title: "Protected Book",
+        bookFileName: "book.pdf",
+        thumbnailFileName: "thumbnail.jpg",
+        user: bookOwnerId,
+        deleteOne: jest.fn(),
+      };
+
+      mockRequest = {
+        params: { id: bookId.toString() },
+        user: { _id: requestUserId }, // Different user tries to delete
+      };
+
+      (Book.findById as jest.Mock).mockResolvedValue(mockBook);
+
+      // Act
+      await bookController.deleteBook(
+        mockRequest as any,
+        mockResponse as Response
+      );
+
+      // Assert
+      expect(mockResponse.status).toHaveBeenCalledWith(403);
+      expect(mockResponse.json).toHaveBeenCalledWith({
+        message: "Unauthorized",
+      });
+      expect(deleteFile).not.toHaveBeenCalled();
+      expect(mockBook.deleteOne).not.toHaveBeenCalled();
+    });
+
+    it("should handle file deletion errors gracefully", async () => {
+      // Arrange
+      const bookId = new Types.ObjectId();
+      const userId = new Types.ObjectId();
+
+      const mockBook = {
+        _id: bookId,
+        title: "Book with File Issue",
+        bookFileName: "problematic-file.pdf",
+        thumbnailFileName: "problematic-thumbnail.jpg",
+        user: userId,
+        deleteOne: jest.fn().mockResolvedValue({}),
+      };
+
+      mockRequest = {
+        params: { id: bookId.toString() },
+        user: { _id: userId },
+      };
+
+      (Book.findById as jest.Mock).mockResolvedValue(mockBook);
+
+      // Mock file deletion failure
+      const error = new Error("File deletion failed");
+      (deleteFile as jest.Mock).mockImplementation(() => {
+        throw error;
+      });
+
+      // Act
+      await bookController.deleteBook(
+        mockRequest as any,
+        mockResponse as Response
+      );
+
+      // Assert
+      expect(mockResponse.json).toHaveBeenCalledWith({
+        message: "Error deleting book",
+        error: expect.any(Error),
+      });
+      expect(mockBook.deleteOne).not.toHaveBeenCalled();
+    });
+
+    it("should handle database deletion errors", async () => {
+      // Arrange
+      const bookId = new Types.ObjectId();
+      const userId = new Types.ObjectId();
+
+      const error = new Error("Database deletion failed");
+      const mockBook = {
+        _id: bookId,
+        title: "Book with DB Issue",
+        bookFileName: "test-book.pdf",
+        thumbnailFileName: "test-thumbnail.jpg",
+        user: userId,
+        deleteOne: jest.fn().mockRejectedValue(error),
+      };
+
+      mockRequest = {
+        params: { id: bookId.toString() },
+        user: { _id: userId },
+      };
+
+      (Book.findById as jest.Mock).mockResolvedValue(mockBook);
+      (deleteFile as jest.Mock).mockImplementation(() => {});
+
+      // Act
+      await bookController.deleteBook(
+        mockRequest as any,
+        mockResponse as Response
+      );
+
+      // Assert
+      expect(mockResponse.json).toHaveBeenCalledWith({
+        message: "Error deleting book",
+        error,
+      });
+      expect(deleteFile).toHaveBeenCalledTimes(2); // Files were still deleted
+    });
+
+    it("should handle error when finding book", async () => {
+      // Arrange
+      mockRequest = {
+        params: { id: new Types.ObjectId().toString() },
+        user: { _id: new Types.ObjectId() },
+      };
+
+      const error = new Error("Database error");
+      (Book.findById as jest.Mock).mockRejectedValue(error);
+
+      // Act
+      await bookController.deleteBook(
+        mockRequest as any,
+        mockResponse as Response
+      );
+
+      // Assert
+      expect(mockResponse.json).toHaveBeenCalledWith({
+        message: "Error deleting book",
+        error,
+      });
+      expect(deleteFile).not.toHaveBeenCalled();
+    });
+  });
 });
