@@ -640,4 +640,104 @@ describe("Book Controller", () => {
       expect(mockResponse.json).toHaveBeenCalledWith({ books: [] });
     });
   });
+
+  describe("getBook", () => {
+    it("should return a book by ID", async () => {
+      // Arrange
+      const bookId = new Types.ObjectId().toString();
+      const mockBook = { title: "Test Book", author: "Test Author" };
+      mockRequest.params = { id: bookId };
+
+      const populateMock = jest.fn().mockReturnThis();
+      const secondPopulateMock = jest.fn().mockResolvedValue(mockBook);
+
+      (Types.ObjectId.isValid as jest.Mock) = jest.fn().mockReturnValue(true);
+      (Book.findById as jest.Mock).mockReturnValue({
+        populate: populateMock.mockImplementation(function () {
+          this.populate = secondPopulateMock;
+          return this;
+        }),
+      });
+
+      // Act
+      await bookController.getBook(
+        mockRequest as Request,
+        mockResponse as Response
+      );
+
+      // Assert
+      expect(mockResponse.status).toHaveBeenCalledWith(200);
+      expect(mockResponse.json).toHaveBeenCalledWith(mockBook);
+    });
+
+    it("should return 400 for invalid ID", async () => {
+      // Arrange
+      mockRequest.params = { id: "invalid-id" };
+      (Types.ObjectId.isValid as jest.Mock) = jest.fn().mockReturnValue(false);
+
+      // Act
+      await bookController.getBook(
+        mockRequest as Request,
+        mockResponse as Response
+      );
+
+      // Assert
+      expect(mockResponse.status).toHaveBeenCalledWith(400);
+      expect(mockResponse.json).toHaveBeenCalledWith({
+        message: "Invalid book ID",
+      });
+    });
+
+    it("should return 404 when book not found", async () => {
+      // Arrange
+      const bookId = new Types.ObjectId().toString();
+      mockRequest.params = { id: bookId };
+
+      const populateMock = jest.fn().mockReturnThis();
+      const secondPopulateMock = jest.fn().mockResolvedValue(null);
+
+      (Types.ObjectId.isValid as jest.Mock) = jest.fn().mockReturnValue(true);
+      (Book.findById as jest.Mock).mockReturnValue({
+        populate: populateMock.mockImplementation(function () {
+          this.populate = secondPopulateMock;
+          return this;
+        }),
+      });
+
+      // Act
+      await bookController.getBook(
+        mockRequest as Request,
+        mockResponse as Response
+      );
+
+      // Assert
+      expect(mockResponse.status).toHaveBeenCalledWith(404);
+    });
+
+    it("should return 500 when an error occurs", async () => {
+      // Arrange
+      const bookId = new Types.ObjectId().toString();
+      mockRequest.params = { id: bookId };
+
+      (Types.ObjectId.isValid as jest.Mock) = jest.fn().mockReturnValue(true);
+      (Book.findById as jest.Mock).mockImplementation(() => {
+        throw new Error("Database error");
+      });
+
+      // Act
+      await bookController.getBook(
+        mockRequest as Request,
+        mockResponse as Response
+      );
+
+      // Assert
+      expect(mockResponse.status).toHaveBeenCalledWith(500);
+      expect(mockResponse.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          message: "Error fetching book",
+          error: expect.any(Error),
+        })
+      );
+    });
+  });
 });
