@@ -39,7 +39,7 @@ jobs:
         run: npm test -- --ci --reporters=default --reporters=jest-junit
 
       - name: Upload Jest test results
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: jest-results
           path: server/junit.xml
