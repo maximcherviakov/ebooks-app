@@ -131,3 +131,6 @@ dist
 
 # uploaded files
 uploads/
+
+# unit-test reports
+junit.xml

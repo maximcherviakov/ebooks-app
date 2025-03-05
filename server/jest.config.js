@@ -3,4 +3,5 @@ module.exports = {
   testEnvironment: "node",
   moduleFileExtensions: ["ts", "js"],
   testMatch: ["**/tests/**/*.test.ts"],
+  reporters: ["default", "jest-junit"],
 };
