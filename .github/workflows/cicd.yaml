@@ -1,0 +1,98 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+      - release/*
+      - feature/*
+      - hotfix/*
+  pull_request:
+    branches:
+      - main
+      - develop
+      - release/*
+      - feature/*
+      - hotfix/*
+
+jobs:
+  test_server:
+    name: Run Server Tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: server
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Run tests with Jest
+        run: npm test -- --ci --reporters=default --reporters=jest-junit
+
+      - name: Upload Jest test results
+        uses: actions/upload-artifact@v3
+        with:
+          name: jest-results
+          path: server/junit.xml
+
+  lint:
+    name: Run ESLint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+
+      - name: Install dependencies (server)
+        run: npm install
+        working-directory: server
+
+      - name: Install dependencies (client)
+        run: npm install
+        working-directory: client
+
+      - name: Run ESLint (server)
+        run: npm run lint
+        working-directory: server
+
+      - name: Run ESLint (client)
+        run: npm run lint
+        working-directory: client
+
+  code_quality:
+    name: Code Quality Analysis
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+
+      - name: Install dependencies (server)
+        run: npm install
+        working-directory: server
+
+      - name: Install dependencies (client)
+        run: npm install
+        working-directory: client
+
+      - name: Run CodeQL Analysis
+        uses: github/codeql-action/analyze@v2
+        with:
+          category: "security"
