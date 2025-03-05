@@ -4,14 +4,25 @@ on:
   push:
     branches:
       - main
+      - develop
+      - release/*
+      - feature/*
+      - hotfix/*
   pull_request:
     branches:
       - main
+      - develop
+      - release/*
+      - feature/*
+      - hotfix/*
 
 jobs:
-  test:
-    name: Run Tests
+  test_server:
+    name: Run Server Tests
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: server
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
@@ -22,7 +33,7 @@ jobs:
           node-version: 18
 
       - name: Install dependencies
-        run: npm ci
+        run: npm install
 
       - name: Run tests with Jest
         run: npm test -- --ci --reporters=default --reporters=jest-junit
@@ -31,7 +42,7 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: jest-results
-          path: junit.xml
+          path: server/junit.xml
 
   lint:
     name: Run ESLint
@@ -45,11 +56,21 @@ jobs:
         with:
           node-version: 18
 
-      - name: Install dependencies
+      - name: Install dependencies (server)
         run: npm install
+        working-directory: server
 
-      - name: Run ESLint
+      - name: Install dependencies (client)
+        run: npm install
+        working-directory: client
+
+      - name: Run ESLint (server)
         run: npm run lint
+        working-directory: server
+
+      - name: Run ESLint (client)
+        run: npm run lint
+        working-directory: client
 
   code_quality:
     name: Code Quality Analysis
@@ -63,8 +84,13 @@ jobs:
         with:
           node-version: 18
 
-      - name: Install dependencies
+      - name: Install dependencies (server)
         run: npm install
+        working-directory: server
+
+      - name: Install dependencies (client)
+        run: npm install
+        working-directory: client
 
       - name: Run CodeQL Analysis
         uses: github/codeql-action/analyze@v2
