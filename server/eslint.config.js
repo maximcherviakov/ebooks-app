@@ -1,23 +1,28 @@
-module.exports = {
-  languageOptions: {
-    globals: {
-      browser: true,
-      node: true,
-      es2021: true,
+module.exports = [
+  {
+    languageOptions: {
+      globals: {
+        browser: true,
+        node: true,
+        es2021: true,
+      },
+      ecmaVersion: 12,
+      sourceType: "module",
+    },
+    plugins: {
+      "@typescript-eslint": {
+        rules: {
+          "@typescript-eslint/indent": ["error", 2],
+          "@typescript-eslint/linebreak-style": ["error", "unix"],
+          "@typescript-eslint/quotes": ["error", "single"],
+          "@typescript-eslint/semi": ["error", "always"],
+        },
+      },
     },
   },
-  extends: ["eslint:recommended", "plugin:@typescript-eslint/recommended"],
-  parser: "@typescript-eslint/parser",
-  parserOptions: {
-    ecmaVersion: 12,
-    sourceType: "module",
+  {
+    files: ["**/*.ts", "**/*.tsx"],
+    extends: ["eslint:recommended", "plugin:@typescript-eslint/recommended"],
+    parser: "@typescript-eslint/parser",
   },
-  plugins: ["@typescript-eslint"],
-  rules: {
-    // Add your custom rules here
-    indent: ["error", 2],
-    "linebreak-style": ["error", "unix"],
-    quotes: ["error", "single"],
-    semi: ["error", "always"],
-  },
-};
+];
