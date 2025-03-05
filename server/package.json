@@ -6,7 +6,8 @@
     "dev": "ts-node-dev --poll ./src/index.ts",
     "build": "tsc",
     "start": "npm run build && node dist/index.js",
-    "test": "jest"
+    "test": "jest",
+    "lint": "eslint ."
   },
   "keywords": [],
   "author": "",
@@ -28,7 +29,8 @@
     "mongodb-memory-server": "^10.1.4",
     "ts-jest": "^29.2.6",
     "ts-node-dev": "^2.0.0",
-    "typescript": "^5.6.2"
+    "typescript": "^5.6.2",
+    "eslint": "^9.9.0"
   },
   "dependencies": {
     "bcrypt": "^5.1.1",
