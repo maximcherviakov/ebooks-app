@@ -76,10 +76,6 @@ jobs:
     name: Analyze code
     runs-on: ubuntu-latest
 
-    strategy:
-      matrix:
-        language: ["javascript", "typescript"]
-
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -87,7 +83,7 @@ jobs:
       - name: Initialize CodeQL
         uses: github/codeql-action/init@v3
         with:
-          languages: ${{ matrix.language }}
+          languages: typescript
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
