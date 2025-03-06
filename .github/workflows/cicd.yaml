@@ -73,33 +73,34 @@ jobs:
         working-directory: client
 
   codeql-analysis:
+    name: Analyze code
     runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        language: ["javascript", "typescript"]
+
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v3
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-    - name: Set up Node.js
-      uses: actions/setup-node@v3
-      with:
-        node-version: 18
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: ${{ matrix.language }}
 
-    - name: Install dependencies
-      run: npm install
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
 
-    - name: Initialize CodeQL
-      uses: github/codeql-action/init@v2
-      with:
-        languages: javascript
+      - name: Install Backend Dependencies
+        working-directory: server
+        run: npm ci
 
-    - name: Perform CodeQL Analysis
-      uses: github/codeql-action/analyze@v2
-      with:
-        category: security
-        output: ../results
-        upload: always
-        cleanup-level: brutal
-        add-snippets: false
-        skip-queries: false
-        checkout_path: ${{ github.workspace }}
-        upload-database: true
-        wait-for-processing: true
+      - name: Install Frontend Dependencies
+        working-directory: client
+        run: npm ci
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v3
