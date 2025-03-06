@@ -73,30 +73,26 @@ jobs:
         working-directory: client
 
   codeql-analysis:
-    name: Analyze code
+    name: Analyze code with CodeQL
     runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v3
 
-      - name: Initialize CodeQL
-        uses: github/codeql-action/init@v3
+      - name: Set up CodeQL
+        uses: github/codeql-action/setup-codeql@v2
         with:
           languages: typescript
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 18
+      - name: Build the project
+        run: |
+          cd backend && npm install && npm run build
+          cd ../frontend && npm install && npm run build
 
-      - name: Install Backend Dependencies
-        working-directory: server
-        run: npm ci
-
-      - name: Install Frontend Dependencies
-        working-directory: client
-        run: npm ci
-
-      - name: Perform CodeQL Analysis
-        uses: github/codeql-action/analyze@v3
+      - name: Analyze code with CodeQL
+        uses: github/codeql-action/analyze@v2
