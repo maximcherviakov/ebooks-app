@@ -1,11 +1,19 @@
 {
   "compilerOptions": {
-    "module": "NodeNext",
-    "moduleResolution": "NodeNext",
+    "target": "ES2022",
+    "module": "ES2022",
+    "moduleResolution": "bundler",
     "esModuleInterop": true,
-    "target": "ES2020",
-    "sourceMap": true,
-    "rootDir": "./",
-    "outDir": "./build"
-  }
+    "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true,
+    "outDir": "dist",
+    "rootDir": ".",
+    "baseUrl": "./src"
+  },
+  "ts-node": {
+    "transpileOnly": true,
+    "esm": true
+  },
+  "include": ["src", "tests"],
+  "exclude": ["node_modules", "dist"]
 }

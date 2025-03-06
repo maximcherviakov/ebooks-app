@@ -1,23 +1,64 @@
-import js from "@eslint/js";
-import ts from "@typescript-eslint/eslint-plugin";
+import globals from "globals";
+import eslint from "@eslint/js";
+import * as tseslint from "@typescript-eslint/eslint-plugin";
 import tsParser from "@typescript-eslint/parser";
 
 export default [
-  js.configs.recommended,
-  ts.configs.recommended,
+  eslint.configs.recommended,
   {
-    files: ["**/*.ts", "**/*.tsx"],
+    ignores: [
+      "node_modules/",
+      "dist/",
+      "build/",
+      "coverage/",
+      "*.js",
+      "eslint.config.js",
+    ],
+  },
+  {
     languageOptions: {
-      parser: tsParser,
+      ecmaVersion: 2022,
       sourceType: "module",
-      ecmaVersion: "latest",
+      parser: tsParser,
+      parserOptions: {
+        project: "./tsconfig.json",
+      },
     },
-    plugins: { "@typescript-eslint": ts },
+    plugins: {
+      "@typescript-eslint": tseslint,
+    },
     rules: {
-      "@typescript-eslint/indent": ["error", 2],
-      "@typescript-eslint/linebreak-style": ["error", "unix"],
-      "@typescript-eslint/quotes": ["error", "single"],
-      "@typescript-eslint/semi": ["error", "always"],
+      "@typescript-eslint/explicit-function-return-type": "warn",
+      "@typescript-eslint/no-explicit-any": "warn",
+      "@typescript-eslint/no-unused-vars": [
+        "error",
+        { argsIgnorePattern: "^_" },
+      ],
+
+      "no-console": ["warn", { allow: ["error", "warn", "info"] }],
+      quotes: ["error", "double"],
+      semi: ["error", "always"],
+      indent: ["error", 2],
+
+      "handle-callback-err": "warn",
+
+      eqeqeq: ["error", "always"],
+      curly: ["error", "all"],
+      "no-var": "error",
+      "prefer-const": "error",
+    },
+  },
+  {
+    files: ["**/*.test.ts", "**/*.spec.ts", "**/tests/**/*.ts"],
+    languageOptions: {
+      globals: {
+        ...globals.jest,
+        ...globals.node,
+      },
+    },
+    rules: {
+      "no-console": "off",
+      "@typescript-eslint/no-explicit-any": "off",
     },
   },
 ];
