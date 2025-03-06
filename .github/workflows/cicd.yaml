@@ -72,27 +72,32 @@ jobs:
         run: npm run lint
         working-directory: client
 
-  codeql-analysis:
+  analyze:
     name: Analyze code with CodeQL
-    runs-on: ubuntu-latest
+    runs-on: "ubuntu-latest"
     permissions:
+      security-events: write
+      packages: read
       actions: read
       contents: read
-      security-events: write
 
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - language: javascript-typescript
+            build-mode: none
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-      - name: Set up CodeQL
-        uses: github/codeql-action/setup-codeql@v1
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
         with:
-          languages: typescript
+          languages: ${{ matrix.language }}
+          build-mode: ${{ matrix.build-mode }}
 
-      - name: Build the project
-        run: |
-          cd backend && npm install && npm run build
-          cd ../frontend && npm install && npm run build
-
-      - name: Analyze code with CodeQL
-        uses: github/codeql-action/analyze@v2
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v3
+        with:
+          category: "/language:${{matrix.language}}"
