@@ -72,27 +72,34 @@ jobs:
         run: npm run lint
         working-directory: client
 
-  code_quality:
-    name: Code Quality Analysis
+  codeql-analysis:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v3
+    - name: Checkout repository
+      uses: actions/checkout@v3
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: 18
+    - name: Set up Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: 18
 
-      - name: Install dependencies (server)
-        run: npm install
-        working-directory: server
+    - name: Install dependencies
+      run: npm install
 
-      - name: Install dependencies (client)
-        run: npm install
-        working-directory: client
+    - name: Initialize CodeQL
+      uses: github/codeql-action/init@v2
+      with:
+        languages: javascript
 
-      - name: Run CodeQL Analysis
-        uses: github/codeql-action/analyze@v2
-        with:
-          category: "security"
+    - name: Perform CodeQL Analysis
+      uses: github/codeql-action/analyze@v2
+      with:
+        category: security
+        output: ../results
+        upload: always
+        cleanup-level: brutal
+        add-snippets: false
+        skip-queries: false
+        checkout_path: ${{ github.workspace }}
+        upload-database: true
+        wait-for-processing: true
