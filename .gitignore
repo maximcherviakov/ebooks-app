@@ -134,3 +134,6 @@ uploads/
 
 # unit-test reports
 junit.xml
+
+# eslint reports
+eslint-report.html

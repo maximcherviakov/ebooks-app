@@ -36,13 +36,19 @@ jobs:
         run: npm install
 
       - name: Run tests with Jest
-        run: npm test -- --ci --reporters=default --reporters=jest-junit
+        run: npm test -- --ci --reporters=default --reporters=jest-junit --reporters=jest-html-reporter
 
       - name: Upload Jest test results
         uses: actions/upload-artifact@v4
         with:
           name: jest-results
           path: server/junit.xml
+
+      - name: Upload HTML Test Report
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-report-html
+          path: server/test-report.html
 
   lint:
     name: Run ESLint
@@ -64,13 +70,25 @@ jobs:
         run: npm install
         working-directory: client
 
-      - name: Run ESLint (server)
-        run: npm run lint
+      - name: Run ESLint and generate HTML report (server)
+        run: npm run lint:html
         working-directory: server
 
-      - name: Run ESLint (client)
-        run: npm run lint
+      - name: Run ESLint and generate HTML report (client)
+        run: npm run lint:html
         working-directory: client
+
+      - name: Upload ESLint HTML Report (server)
+        uses: actions/upload-artifact@v4
+        with:
+          name: eslint-report-server
+          path: server/eslint-report.html
+
+      - name: Upload ESLint HTML Report (client)
+        uses: actions/upload-artifact@v4
+        with:
+          name: eslint-report-client
+          path: client/eslint-report.html
 
   analyze:
     name: Analyze code with CodeQL
