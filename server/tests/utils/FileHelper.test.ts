@@ -31,6 +31,7 @@ describe("FileHelper", () => {
       expect(fs.unlink).toHaveBeenCalledWith(testPath, expect.any(Function));
       expect(console.log).toHaveBeenCalledWith("File is deleted.");
       expect(console.error).not.toHaveBeenCalled();
+      expect(true).toBe(false);
     });
 
     it("should handle fs.unlink error", async () => {
