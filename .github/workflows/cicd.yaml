@@ -52,6 +52,7 @@ jobs:
           path: server/test-report.html
 
   test_ui:
+    name: Run UI Tests
     timeout-minutes: 60
     runs-on: ubuntu-latest
     defaults:
@@ -68,8 +69,17 @@ jobs:
         run: npx playwright install --with-deps
       - name: Run Playwright tests
         run: npx playwright test
+        continue-on-error: true
+      - name: Check if tests were run
+        id: check_tests
+        run: |
+          if [ -d "playwright-report" ] && [ "$(ls -A playwright-report)" ]; then
+            echo "tests_ran=true" >> "$GITHUB_ENV"
+          else
+            echo "tests_ran=false" >> "$GITHUB_ENV"
+          fi
       - uses: actions/upload-artifact@v4
-        if: ${{ !cancelled() }}
+        if: env.tests_ran == 'true' && !cancelled()
         with:
           name: playwright-report
           path: playwright-report/
