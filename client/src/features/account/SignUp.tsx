@@ -24,20 +24,25 @@ export default function SignUp() {
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     try {
       event.preventDefault();
-      const data = new FormData(event.currentTarget);
 
-      const payload = {
-        username: data.get("username")?.toString() || "",
-        email: data.get("email")?.toString() || "",
-        password: data.get("password")?.toString() || "",
-      };
+      const valid = validateInputs();
 
-      const response = await agent.User.signUp(payload);
+      if (valid) {
+        const data = new FormData(event.currentTarget);
 
-      const token = response.token;
-      setAuthToken(token);
+        const payload = {
+          username: data.get("username")?.toString() || "",
+          email: data.get("email")?.toString() || "",
+          password: data.get("password")?.toString() || "",
+        };
 
-      navigate("/dashboard");
+        const response = await agent.User.signUp(payload);
+
+        const token = response.token;
+        setAuthToken(token);
+
+        navigate("/dashboard");
+      }
     } catch (error) {
       console.error("Registration failed: ", error);
     }
@@ -53,6 +58,10 @@ export default function SignUp() {
     if (!username.value) {
       setNameError(true);
       setNameErrorMessage("Please enter a username.");
+      isValid = false;
+    } else if (username.value.length < 3) {
+      setNameError(true);
+      setNameErrorMessage("Username must be at least 3 characters long.");
       isValid = false;
     } else {
       setNameError(false);
