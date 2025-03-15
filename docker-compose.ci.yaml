@@ -13,13 +13,6 @@ services:
     build:
       context: ./
       target: backend-dev
-    develop:
-      watch:
-        - path: ./server/src
-          action: sync
-          target: /usr/local/app/src
-        - path: ./server/package.json
-          action: rebuild
     volumes:
       - backend_uploads:/usr/local/app/uploads
     depends_on:
@@ -33,52 +26,9 @@ services:
     build:
       context: ./
       target: client-dev
-    develop:
-      watch:
-        - path: ./client/src
-          action: sync
-          target: /usr/local/app/src
-        - path: ./client/package.json
-          action: rebuild
     labels:
       traefik.http.routers.client.rule: Host(`localhost`)
       traefik.http.services.client.loadbalancer.server.port: 3000
-
-  # ui-tests:
-  #   image: mcr.microsoft.com/playwright:v1.41.0
-  #   container_name: ui-tests
-  #   build:
-  #     context: ./
-  #     target: ui-tests
-  #   volumes:
-  #     - ./ui-tests/playwright-report:/usr/local/app/playwright-report
-  #   depends_on:
-  #     - client
-  #   command: ["xvfb-run", "npx", "playwright", "test", "--headed"]
-
-  # ui-tests:
-  #   image: mcr.microsoft.com/playwright:v1.41.0
-  #   container_name: ui-tests
-  #   build:
-  #     context: ./
-  #     target: ui-tests
-  #   volumes:
-  #     - ./client:/usr/local/app/client
-  #     - ./client/playwright-report:/usr/local/app/playwright-report
-  #   environment:
-  #     - BASE_URL=http://client:3000
-  #   depends_on:
-  #     - client
-  #     - backend
-  #   command:
-  #     [
-  #       "xvfb-run",
-  #       "npx",
-  #       "playwright",
-  #       "test",
-  #       "--project=chromium",
-  #       "--config=client/playwright.config.ts",
-  #     ]
 
   ui-tests:
     container_name: ui-tests

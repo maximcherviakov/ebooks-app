@@ -99,8 +99,8 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y docker-compose
 
-      - name: Build, start containers and run tests
-        run: docker-compose up -d
+      - name: Build and start containers
+        run: docker-compose -f docker-compose.ci.yaml up -d
 
       - name: Wait for services to be ready
         run: |
@@ -123,6 +123,17 @@ jobs:
             echo "Timed out waiting for services to start!"
             docker-compose logs
             exit 1
+          fi
+
+      - name: Run UI Tests
+        run: |
+          docker-compose -f docker-compose.ci.yaml up ui-tests --exit-code-from ui-tests
+          test_exit_code=$?
+          echo "UI tests completed with exit code: $test_exit_code"
+          if [ $test_exit_code -eq 0 ]; then
+            echo "tests_ran=true" >> $GITHUB_ENV
+          else
+            echo "tests_ran=false" >> $GITHUB_ENV
           fi
 
       - name: Shut down containers
