@@ -128,7 +128,7 @@ jobs:
           interval=5
 
           until [ "$elapsed" -ge "$timeout" ]; do
-            if docker-compose ps --services | xargs -I{} docker-compose ps {} | grep -q "running"; then
+            if docker-compose -f docker-compose.ci.yaml ps --services | xargs -I{} docker-compose -f docker-compose.ci.yaml ps {} | grep -q "running"; then
               echo "All services are running."
               break
             fi
@@ -139,7 +139,7 @@ jobs:
 
           if [ "$elapsed" -ge "$timeout" ]; then
             echo "Timed out waiting for services to start!"
-            docker-compose logs
+            docker-compose -f docker-compose.ci.yaml logs
             exit 1
           fi
 
@@ -155,7 +155,7 @@ jobs:
           fi
 
       - name: Shut down containers
-        run: docker-compose down
+        run: docker-compose -f docker-compose.ci.yaml down
 
       - uses: actions/upload-artifact@v4
         if: env.tests_ran == 'true' && !cancelled()
