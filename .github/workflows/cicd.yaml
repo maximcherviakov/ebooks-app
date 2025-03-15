@@ -51,39 +51,83 @@ jobs:
           name: test-report-html
           path: server/test-report.html
 
-  test_ui:
-    name: Run UI Tests
-    timeout-minutes: 60
+  # test_ui:
+  #   name: Run UI Tests
+  #   timeout-minutes: 60
+  #   runs-on: ubuntu-latest
+  #   defaults:
+  #     run:
+  #       working-directory: client
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #     - uses: actions/setup-node@v4
+  #       with:
+  #         node-version: 18
+  #     - name: Install dependencies
+  #       run: npm ci
+  #     - name: Install Playwright Browsers
+  #       run: npx playwright install --with-deps
+  #     - name: Run Playwright tests
+  #       run: npx playwright test
+  #       continue-on-error: true
+  #     - name: Check if tests were run
+  #       id: check_tests
+  #       run: |
+  #         if [ -d "playwright-report" ] && [ "$(ls -A playwright-report)" ]; then
+  #           echo "tests_ran=true" >> "$GITHUB_ENV"
+  #         else
+  #           echo "tests_ran=false" >> "$GITHUB_ENV"
+  #         fi
+  #     - uses: actions/upload-artifact@v4
+  #       if: env.tests_ran == 'true' && !cancelled()
+  #       with:
+  #         name: playwright-report
+  #         path: playwright-report/
+  #         retention-days: 30
+
+  e2e-tests:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: client
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+
+      - name: Set Up Node.js
+        uses: actions/setup-node@v3
         with:
           node-version: 18
-      - name: Install dependencies
-        run: npm ci
+
+      - name: Install Dependencies
+        run: npm install
+
       - name: Install Playwright Browsers
         run: npx playwright install --with-deps
-      - name: Run Playwright tests
-        run: npx playwright test
-        continue-on-error: true
-      - name: Check if tests were run
-        id: check_tests
+
+      - name: Start Application Services
+        run: docker-compose up -d
+
+      - name: Wait for Backend to be Ready
+        run: npx wait-on http://localhost
+
+      - name: Start Xvfb (Virtual Display for Headed Mode)
         run: |
-          if [ -d "playwright-report" ] && [ "$(ls -A playwright-report)" ]; then
-            echo "tests_ran=true" >> "$GITHUB_ENV"
-          else
-            echo "tests_ran=false" >> "$GITHUB_ENV"
-          fi
-      - uses: actions/upload-artifact@v4
-        if: env.tests_ran == 'true' && !cancelled()
+          sudo apt-get update
+          sudo apt-get install -y xvfb
+          Xvfb :99 -screen 0 1920x1080x24 &
+          echo "DISPLAY=:99" >> $GITHUB_ENV
+
+      - name: Run Playwright Tests in Headed Mode
+        run: npx playwright test --headed --trace on
+        working-directory: client
+
+      - name: Stop Services
+        run: docker-compose down
+
+      - name: Upload Playwright Test Artifacts
+        if: always()
+        uses: actions/upload-artifact@v3
         with:
-          name: playwright-report
-          path: playwright-report/
-          retention-days: 30
+          name: playwright-artifacts
+          path: test-results/
 
   lint:
     name: Run ESLint
