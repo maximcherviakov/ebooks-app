@@ -137,13 +137,17 @@ jobs:
 
       - name: Run UI Tests
         run: |
-          docker-compose -f docker-compose.ci.yaml up --exit-code-from ui-tests ui-tests
+          docker-compose -f docker-compose.ci.yaml --profile test up --exit-code-from ui-tests --build ui-tests
           test_exit_code=$?
           echo "UI tests completed with exit code: $test_exit_code"
+
+          docker cp ui-tests:/usr/local/app/playwright-report ./
+
+          echo "tests_ran=true" >> $GITHUB_ENV
           if [ $test_exit_code -eq 0 ]; then
-            echo "tests_ran=true" >> $GITHUB_ENV
+            echo "tests_passed=true" >> $GITHUB_ENV
           else
-            echo "tests_ran=false" >> $GITHUB_ENV
+            echo "tests_passed=false" >> $GITHUB_ENV
           fi
 
       - name: Shut down containers
