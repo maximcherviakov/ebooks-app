@@ -98,9 +98,11 @@ jobs:
 
       - name: Install Dependencies
         run: npm install
+        working-directory: client
 
       - name: Install Playwright Browsers
         run: npx playwright install --with-deps
+        working-directory: client
 
       - name: Start Application Services
         run: docker-compose up -d
