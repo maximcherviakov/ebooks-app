@@ -51,41 +51,8 @@ jobs:
           name: test-report-html
           path: server/test-report.html
 
-  # test_ui:
-  #   name: Run UI Tests
-  #   timeout-minutes: 60
-  #   runs-on: ubuntu-latest
-  #   defaults:
-  #     run:
-  #       working-directory: client
-  #   steps:
-  #     - uses: actions/checkout@v4
-  #     - uses: actions/setup-node@v4
-  #       with:
-  #         node-version: 18
-  #     - name: Install dependencies
-  #       run: npm ci
-  #     - name: Install Playwright Browsers
-  #       run: npx playwright install --with-deps
-  #     - name: Run Playwright tests
-  #       run: npx playwright test
-  #       continue-on-error: true
-  #     - name: Check if tests were run
-  #       id: check_tests
-  #       run: |
-  #         if [ -d "playwright-report" ] && [ "$(ls -A playwright-report)" ]; then
-  #           echo "tests_ran=true" >> "$GITHUB_ENV"
-  #         else
-  #           echo "tests_ran=false" >> "$GITHUB_ENV"
-  #         fi
-  #     - uses: actions/upload-artifact@v4
-  #       if: env.tests_ran == 'true' && !cancelled()
-  #       with:
-  #         name: playwright-report
-  #         path: playwright-report/
-  #         retention-days: 30
-
   e2e-tests:
+    name: Run UI Tests
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -122,26 +89,35 @@ jobs:
 
       - name: Wait for services to be ready
         run: |
-          echo "Waiting for services to start..."
-          timeout=60
-          elapsed=0
-          interval=5
+          echo "Waiting for services to be ready..."
 
-          until [ "$elapsed" -ge "$timeout" ]; do
-            if docker-compose -f docker-compose.ci.yaml ps --services | xargs -I{} docker-compose -f docker-compose.ci.yaml ps {} | grep -q "running"; then
-              echo "All services are running."
-              break
-            fi
-            echo "Waiting for services... ($elapsed/$timeout seconds)"
-            sleep $interval
-            elapsed=$((elapsed+interval))
-          done
+          # Function to check if a service is ready
+          wait_for_service() {
+            local service_name="$1"
+            local url="$2"
+            local max_attempts=30
+            local wait_seconds=5
+            
+            echo "Waiting for $service_name to be ready..."
+            for i in $(seq 1 $max_attempts); do
+              if curl -s -f "$url" > /dev/null; then
+                echo "$service_name is ready!"
+                return 0
+              fi
+              echo "Attempt $i/$max_attempts: $service_name not ready yet, waiting ${wait_seconds}s..."
+              sleep $wait_seconds
+            done
+            
+            echo "Error: $service_name did not become ready in time."
+            return 1
+          }
 
-          if [ "$elapsed" -ge "$timeout" ]; then
-            echo "Timed out waiting for services to start!"
-            docker-compose -f docker-compose.ci.yaml logs
-            exit 1
-          fi
+          # Check each service
+          wait_for_service "proxy" "http://localhost"
+          wait_for_service "client" "http://localhost"
+          wait_for_service "backend" "http://localhost/api"
+
+          echo "All services are ready!"
 
       - name: Run UI Tests
         run: |

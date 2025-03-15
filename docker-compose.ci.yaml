@@ -26,6 +26,8 @@ services:
     build:
       context: ./
       target: client-dev
+    depends_on:
+      - backend
     labels:
       traefik.http.routers.client.rule: Host(`localhost`)
       traefik.http.services.client.loadbalancer.server.port: 3000
