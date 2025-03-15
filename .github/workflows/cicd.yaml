@@ -88,53 +88,47 @@ jobs:
   e2e-tests:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v3
+      - name: Checkout repository
+        uses: actions/checkout@v2
 
-      - name: Set Up Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: 18
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v1
 
-      - name: Install Dependencies
-        run: npm install
-        working-directory: client
-
-      - name: Install Playwright Browsers
-        run: npx playwright install --with-deps
-        working-directory: client
-
-      - name: Install Docker Compose
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y docker-compose
-
-      - name: Start Application Services
+      - name: Build, start containers and run tests
         run: docker-compose up -d
 
-      - name: Wait for Backend to be Ready
-        run: npx wait-on http://localhost
-
-      - name: Start Xvfb (Virtual Display for Headed Mode)
+      - name: Wait for services to be ready
         run: |
-          sudo apt-get update
-          sudo apt-get install -y xvfb
-          Xvfb :99 -screen 0 1920x1080x24 &
-          echo "DISPLAY=:99" >> $GITHUB_ENV
+          echo "Waiting for services to start..."
+          timeout=60
+          elapsed=0
+          interval=5
 
-      - name: Run Playwright Tests in Headed Mode
-        run: npx playwright test --headed --trace on
-        working-directory: client
+          until [ "$elapsed" -ge "$timeout" ]; do
+            if docker-compose ps --services | xargs -I{} docker-compose ps {} | grep -q "running"; then
+              echo "All services are running."
+              break
+            fi
+            echo "Waiting for services... ($elapsed/$timeout seconds)"
+            sleep $interval
+            elapsed=$((elapsed+interval))
+          done
 
-      - name: Stop Services
+          if [ "$elapsed" -ge "$timeout" ]; then
+            echo "Timed out waiting for services to start!"
+            docker-compose logs
+            exit 1
+          fi
+
+      - name: Shut down containers
         run: docker-compose down
 
-      - name: Upload Playwright Test Artifacts
-        if: always()
-        uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v4
+        if: env.tests_ran == 'true' && !cancelled()
         with:
-          name: playwright-artifacts
-          path: test-results/
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 30
 
   lint:
     name: Run ESLint

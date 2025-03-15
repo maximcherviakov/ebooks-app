@@ -27,3 +27,29 @@ RUN npm install
 COPY client/ .
 COPY ./.env .
 CMD ["npm", "run", "dev"]
+
+################### TEST STAGES ###################
+
+# FROM mcr.microsoft.com/playwright:focal AS ui-tests
+# WORKDIR /usr/local/app
+# COPY client/package.json client/package-lock.json ./
+# RUN npm install
+# COPY client/tests/ .
+# COPY ./.env .
+# CMD ["xvfb-run", "npx", "playwright", "test", "--headed"]
+
+# FROM base as ui-tests
+# WORKDIR /usr/local/app
+# COPY client/package*.json ./
+# RUN npm ci
+# COPY client ./client
+# RUN npx playwright install --with-deps chromium
+
+FROM base as ui-tests
+WORKDIR /usr/local/app
+# Install X11 dependencies including xauth
+RUN apt-get update && apt-get install -y xvfb xauth
+COPY client/package*.json ./
+RUN npm ci
+COPY client ./client
+RUN npx playwright install --with-deps chromium
