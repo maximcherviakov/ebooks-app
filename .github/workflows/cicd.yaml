@@ -104,6 +104,11 @@ jobs:
         run: npx playwright install --with-deps
         working-directory: client
 
+      - name: Install Docker Compose
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y docker-compose
+
       - name: Start Application Services
         run: docker-compose up -d
 
