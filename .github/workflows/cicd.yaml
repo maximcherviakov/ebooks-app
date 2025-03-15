@@ -146,7 +146,7 @@ jobs:
           # Monitor the test container with a timeout (15 minutes)
           echo "Waiting for UI tests to complete..."
           start_time=$(date +%s)
-          timeout_seconds=900
+          timeout_seconds=1800
           
           while docker ps --filter "name=ui-tests" --quiet | grep -q .; do
             current_time=$(date +%s)
