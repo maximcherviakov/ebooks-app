@@ -91,6 +91,24 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v2
 
+      - name: Create .env file
+        run: |
+          echo "BACKEND_HOST=${{ secrets.BACKEND_HOST }}" >> .env
+          echo "BACKEND_PORT=${{ secrets.BACKEND_PORT }}" >> .env
+          echo "BACKEND_UPLOADED_BOOKS_PATH=${{ secrets.BACKEND_UPLOADED_BOOKS_PATH }}" >> .env
+          echo "BACKEND_UPLOADED_THUMBNAILS_PATH=${{ secrets.BACKEND_UPLOADED_THUMBNAILS_PATH }}" >> .env
+          echo "BACKEND_JWT_SECRET_KEY=${{ secrets.BACKEND_JWT_SECRET_KEY }}" >> .env
+          echo "BACKEND_JWT_EXPIRES_IN=${{ secrets.BACKEND_JWT_EXPIRES_IN }}" >> .env
+          echo "BACKEND_GOOGLE_CLIENT_ID=${{ secrets.BACKEND_GOOGLE_CLIENT_ID }}" >> .env
+          echo "BACKEND_GOOGLE_CLIENT_SECRET=${{ secrets.BACKEND_GOOGLE_CLIENT_SECRET }}" >> .env
+          echo "FRONTEND_HOST=${{ secrets.FRONTEND_HOST }}" >> .env
+          echo "FRONTEND_PORT=${{ secrets.FRONTEND_PORT }}" >> .env
+          echo "MONGO_HOST=${{ secrets.MONGO_HOST }}" >> .env
+          echo "MONGO_PORT=${{ secrets.MONGO_PORT }}" >> .env
+          echo "MONGO_DB=${{ secrets.MONGO_DB }}" >> .env
+          echo "MONGO_USER=${{ secrets.MONGO_USER }}" >> .env
+          echo "MONGO_PASS=${{ secrets.MONGO_PASS }}" >> .env
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v1
 
