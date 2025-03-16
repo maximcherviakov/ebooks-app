@@ -1,2 +1,4 @@
 **/node_modules
 **/uploads
+**/playwright-report
+**/test-results

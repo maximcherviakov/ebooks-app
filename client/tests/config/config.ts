@@ -4,5 +4,7 @@ import dotenv from "dotenv";
 dotenv.config();
 
 export const config = {
-  baseUrl: "http://localhost/",
+  // baseUrl: process.env.BASE_URL || "http://localhost",
+  baseUrl: process.env.BASE_URL || "http://proxy",
+  // baseUrl: process.env.BASE_URL || "http://client:3000",
 };
