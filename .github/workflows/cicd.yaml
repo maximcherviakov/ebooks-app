@@ -88,10 +88,10 @@ jobs:
           sudo apt-get install -y docker-compose
 
       - name: Build and start containers
-        run: docker-compose -f docker-compose.ci.yaml up -d
+        run: docker-compose -f docker-compose.ci.yaml up
 
       - name: Run Playwright tests
-        run: docker-compose --profile test -f docker-compose.ci.yaml up -d
+        run: docker-compose --profile test -f docker-compose.ci.yaml up
 
       - name: Upload Playwright report
         uses: actions/upload-artifact@v4
