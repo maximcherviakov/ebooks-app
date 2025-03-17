@@ -18,42 +18,36 @@ services:
     depends_on:
       - mongo
     labels:
-      traefik.http.routers.backend.rule: Host(`localhost`) && PathPrefix(`/api`)
+      traefik.http.routers.backend.rule: (Host(`localhost`) || Host(`proxy`)) && PathPrefix(`/api`)
       traefik.http.services.backend.loadbalancer.server.port: 5000
 
   client:
     container_name: ebooks-app-client
     build:
       context: ./
-      target: client-dev
-    depends_on:
-      - backend
+      target: client-test
+    ports:
+      - "3000:3000"
     labels:
-      traefik.http.routers.client.rule: Host(`localhost`)
+      traefik.http.routers.client.rule: Host(`localhost`) || Host(`proxy`)
       traefik.http.services.client.loadbalancer.server.port: 3000
 
-  # ui-tests:
-  #   container_name: ui-tests
-  #   build:
-  #     context: ./
-  #     target: ui-tests
-  #   volumes:
-  #     - ./client/playwright-report:/usr/local/app/playwright-report
-  #   environment:
-  #     - BASE_URL=http://client:3000
-  #   depends_on:
-  #     - client
-  #     - backend
-  #   command:
-  #     [
-  #       "xvfb-run",
-  #       "npx",
-  #       "playwright",
-  #       "test",
-  #       "--project=chromium",
-  #       "--config=client/playwright.config.ts",
-  #     ]
-  #   profiles: ["test"]
+  ui-tests:
+    container_name: ui-tests
+    build:
+      context: ./
+      target: ui-tests
+    volumes:
+      - ./client/playwright-report:/usr/local/app/playwright-report
+      - ./client/test-results:/usr/local/app/test-results
+      - ./client/tests:/usr/local/app/tests
+    environment:
+      - DISPLAY=:99
+      - BASE_URL=http://proxy
+      - DEBUG=pw:api
+      - CI=true
+    shm_size: 2gb
+    profiles: ["test"]
 
   mongo:
     image: mongo:8.0
