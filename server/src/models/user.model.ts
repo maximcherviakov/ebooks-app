@@ -27,11 +27,19 @@ const userSchema = new Schema<IUser, UserModel, IUserMethods>(
     },
     googleId: {
       type: String,
-      unique: true,
+      index: {
+        unique: true,
+        sparse: true,
+        partialFilterExpression: { googleId: { $exists: true, $ne: null } },
+      },
     },
     githubId: {
       type: String,
-      unique: true,
+      index: {
+        unique: true,
+        sparse: true,
+        partialFilterExpression: { githubId: { $exists: true, $ne: null } },
+      },
     },
   },
   { timestamps: true }

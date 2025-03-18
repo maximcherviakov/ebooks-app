@@ -33,6 +33,7 @@ export const register = async (req: Request, res: Response) => {
   } catch (error) {
     if (error.code === 11000) {
       // Duplicate key error
+      console.error("Registration error:", error);
       res.status(409).json({ message: "Username or email already exists" });
     } else {
       console.error("Registration error:", error);
