@@ -79,3 +79,39 @@ EXPOSE 5900
 
 ENTRYPOINT ["./start.sh"]
 CMD ["npx", "playwright", "test", "--headed"]
+
+FROM mcr.microsoft.com/playwright:v1.51.0-noble as kdt-ui-tests
+
+WORKDIR /usr/local/app
+
+# Install X11 utilities and VNC server for headed mode
+RUN apt-get update && apt-get install -y \
+    x11vnc \
+    xvfb \
+    fluxbox \
+    --no-install-recommends \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy project files
+COPY kdt-tests/ ./
+
+# Install dependencies
+RUN npm install
+
+# Install Playwright browsers with dependencies
+RUN npx playwright install --with-deps
+
+# Set up virtual display
+ENV DISPLAY=:99
+ENV SCREEN_WIDTH=1280
+ENV SCREEN_HEIGHT=720
+ENV SCREEN_DEPTH=24
+
+# Add startup script
+RUN chmod +x ./start.sh
+
+# Expose port for VNC
+EXPOSE 5900
+
+ENTRYPOINT ["./start.sh"]
+CMD ["npm", "run", "test"]

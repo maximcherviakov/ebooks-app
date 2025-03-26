@@ -63,6 +63,21 @@ services:
     shm_size: 2gb
     profiles: ["test"]
 
+  kdt-ui-tests:
+    container_name: kdt-ui-tests
+    build:
+      context: ./
+      target: kdt-ui-tests
+    volumes:
+      - ./kdt-tests/test-results:/usr/local/app/test-results
+      - ./kdt-tests/src:/usr/local/app/src
+    environment:
+      - DISPLAY=:99
+      - BASE_URL=http://proxy
+      - DEBUG=pw:api
+    shm_size: 2gb
+    profiles: ["kdt-test"]
+
   mongo:
     image: mongo:8.0
     container_name: ebooks-app-mongo
