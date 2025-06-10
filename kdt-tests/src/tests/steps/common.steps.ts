@@ -2,6 +2,12 @@ import { Given, When, Then, After } from "@cucumber/cucumber";
 import { expect } from "@playwright/test";
 import { faker } from "@faker-js/faker";
 import { ICustomWorld } from "../../hooks/customWorld";
+import { LoginPage } from "../../pages/LoginPage";
+import { RegistrationPage } from "../../pages/RegistrationPage";
+import { DashboardPage } from "../../pages/DashboardPage";
+import { SettingsPage } from "../../pages/SettingsPage";
+import { BooksPage } from "../../pages/BooksPage";
+import { BookDetailsPage } from "../../pages/BookDetailsPage";
 import path from "path";
 
 // Background steps
@@ -12,85 +18,61 @@ Given("I have a registered user account", async function (this: ICustomWorld) {
   this.email = faker.internet.email();
   this.password = faker.internet.password();
 
-  await this.page.goto(this.config.baseUrl);
+  const registrationPage = new RegistrationPage(this);
+  await registrationPage.navigate();
+  await registrationPage.register(this.username, this.email, this.password);
 
-  await this.page.getByRole("link", { name: "Login" }).click();
-  await this.page.getByRole("link", { name: "Sign up" }).click();
-  await this.page
-    .getByRole("textbox", { name: "Username" })
-    .fill(this.username);
-  await this.page.getByRole("textbox", { name: "Email" }).fill(this.email);
-  await this.page
-    .getByRole("textbox", { name: "Password" })
-    .fill(this.password);
-  await this.page.getByRole("button", { name: "Sign up" }).click();
-
-  await this.page
-    .getByRole("heading", { name: `User name: ${this.username}` })
-    .waitFor();
-  await this.page
-    .getByRole("heading", { name: `Email: ${this.email}` })
-    .waitFor();
-
-  await expect(this.page).toHaveURL(/dashboard/);
-
-  await this.page.getByRole("link", { name: "Logout" }).click();
-  await expect(this.page).toHaveURL(/\/$/);
+  const dashboardPage = new DashboardPage(this);
+  await dashboardPage.verifyLoggedIn(this.username, this.email);
+  await dashboardPage.logout();
 });
 
 Given(
   "I am logged in with my credentials",
   async function (this: ICustomWorld) {
-    await this.page.goto(this.config.baseUrl);
-    await this.page.getByRole("link", { name: "Login" }).click();
-    await this.page.getByRole("textbox", { name: "Email" }).fill(this.email);
-    await this.page
-      .getByRole("textbox", { name: "Password" })
-      .fill(this.password);
-    await this.page.getByRole("button", { name: "Sign in" }).click();
+    const loginPage = new LoginPage(this);
+    await loginPage.navigate();
+    await loginPage.login(this.email, this.password);
 
-    await this.page
-      .getByRole("heading", { name: `User name: ${this.username}` })
-      .waitFor();
-    await this.page
-      .getByRole("heading", { name: `Email: ${this.email}` })
-      .waitFor();
-    await expect(this.page).toHaveURL(/dashboard/);
+    const dashboardPage = new DashboardPage(this);
+    await dashboardPage.verifyLoggedIn(this.username, this.email);
   }
 );
 
 // Common steps
 When("I navigate to the login page", async function (this: ICustomWorld) {
-  await this.page.goto(this.config.baseUrl);
-  await this.page.getByRole("link", { name: "Login" }).click();
+  const loginPage = new LoginPage(this);
+  await loginPage.navigate();
 });
 
 // Registration navigation step
 When(
   "I navigate to the registration page",
   async function (this: ICustomWorld) {
-    await this.page.goto(this.config.baseUrl);
-    await this.page.getByRole("link", { name: "Login" }).click();
-    await this.page.getByRole("link", { name: "Sign up" }).click();
+    const registrationPage = new RegistrationPage(this);
+    await registrationPage.navigate();
   }
 );
 
 // Navigation steps
 When("I navigate to the settings page", async function (this: ICustomWorld) {
-  await this.page.getByRole("link", { name: "Settings" }).click();
-  await expect(this.page).toHaveURL(/dashboard\/settings/);
+  const dashboardPage = new DashboardPage(this);
+  await dashboardPage.navigateToSettings();
 });
 
 // Books navigation steps
 When("I navigate to the books page", async function (this: ICustomWorld) {
-  await this.page.getByRole("link", { name: "My Books" }).click();
-  await expect(this.page).toHaveURL(/dashboard\/books/);
+  const dashboardPage = new DashboardPage(this);
+  await dashboardPage.navigateToMyBooks();
 });
 
 When(
   "I click the {string} link",
   async function (this: ICustomWorld, linkName: string) {
-    await this.page.getByRole("link", { name: linkName }).click();
+    // This step is generic, consider if it should be part of a specific page object
+    // For now, assuming it's on the current page, handled by BasePage or specific page
+    const currentPage = new DashboardPage(this); // Or another appropriate page
+    await currentPage.clickLink(linkName);
   }
 );
 
@@ -100,126 +82,124 @@ When("I enter valid registration details", async function (this: ICustomWorld) {
   this.email = faker.internet.email();
   this.password = faker.internet.password();
 
-  await this.page
-    .getByRole("textbox", { name: "Username" })
-    .fill(this.username);
-  await this.page.getByRole("textbox", { name: "Email" }).fill(this.email);
-  await this.page
-    .getByRole("textbox", { name: "Password" })
-    .fill(this.password);
+  const registrationPage = new RegistrationPage(this);
+  await registrationPage.fillUsername(this.username);
+  await registrationPage.fillEmail(this.email);
+  await registrationPage.fillPassword(this.password);
 });
 
 When(
   "I enter a username that is too short",
   async function (this: ICustomWorld) {
     this.username = "te";
-    await this.page
-      .getByRole("textbox", { name: "Username" })
-      .fill(this.username);
+    const registrationPage = new RegistrationPage(this);
+    await registrationPage.fillUsername(this.username);
   }
 );
 
 When("I enter an empty username", async function (this: ICustomWorld) {
   this.username = "";
-  await this.page
-    .getByRole("textbox", { name: "Username" })
-    .fill(this.username);
+  const registrationPage = new RegistrationPage(this);
+  await registrationPage.fillUsername(this.username);
 });
 
 When("I enter a valid username", async function (this: ICustomWorld) {
   this.username = faker.internet.userName();
-  await this.page
-    .getByRole("textbox", { name: "Username" })
-    .fill(this.username);
+  const registrationPage = new RegistrationPage(this);
+  await registrationPage.fillUsername(this.username);
 });
 
 When("I enter a valid email", async function (this: ICustomWorld) {
   this.email = faker.internet.email();
-  await this.page.getByRole("textbox", { name: "Email" }).fill(this.email);
+  const registrationPage = new RegistrationPage(this);
+  await registrationPage.fillEmail(this.email);
 });
 
 When("I enter an email without @ symbol", async function (this: ICustomWorld) {
   this.email = "test.com";
-  await this.page.getByRole("textbox", { name: "Email" }).fill(this.email);
+  const registrationPage = new RegistrationPage(this);
+  await registrationPage.fillEmail(this.email);
 });
 
 When("I enter an email without dot", async function (this: ICustomWorld) {
   this.email = "test@testcom";
-  await this.page.getByRole("textbox", { name: "Email" }).fill(this.email);
+  const registrationPage = new RegistrationPage(this);
+  await registrationPage.fillEmail(this.email);
 });
 
 When("I enter an incomplete email", async function (this: ICustomWorld) {
   this.email = "@test.com";
-  await this.page.getByRole("textbox", { name: "Email" }).fill(this.email);
+  const registrationPage = new RegistrationPage(this);
+  await registrationPage.fillEmail(this.email);
 });
 
 When("I enter a valid password", async function (this: ICustomWorld) {
   this.password = faker.internet.password();
-  await this.page
-    .getByRole("textbox", { name: "Password" })
-    .fill(this.password);
+  const registrationPage = new RegistrationPage(this);
+  await registrationPage.fillPassword(this.password);
 });
 
 When(
   "I enter a password that is too short",
   async function (this: ICustomWorld) {
     this.password = "passw";
-    await this.page
-      .getByRole("textbox", { name: "Password" })
-      .fill(this.password);
+    const registrationPage = new RegistrationPage(this);
+    await registrationPage.fillPassword(this.password);
   }
 );
 
 // Password reset specific steps
 When("I enter my current password", async function (this: ICustomWorld) {
-  await this.page.getByLabel("Current Password").fill(this.password);
+  const settingsPage = new SettingsPage(this);
+  await settingsPage.fillCurrentPassword(this.password);
 });
 
 When(
   "I enter an incorrect current password",
   async function (this: ICustomWorld) {
     const invalidPassword = faker.internet.password();
-    await this.page.getByLabel("Current Password").fill(invalidPassword);
+    const settingsPage = new SettingsPage(this);
+    await settingsPage.fillCurrentPassword(invalidPassword);
   }
 );
 
 When("I enter an empty current password", async function (this: ICustomWorld) {
-  await this.page.getByLabel("Current Password").fill("");
+  const settingsPage = new SettingsPage(this);
+  await settingsPage.fillCurrentPassword("");
 });
 
 When("I enter a valid new password", async function (this: ICustomWorld) {
   this.newPassword = faker.internet.password();
-  await this.page
-    .getByLabel("New Password", { exact: true })
-    .fill(this.newPassword);
+  const settingsPage = new SettingsPage(this);
+  await settingsPage.fillNewPassword(this.newPassword);
 });
 
 When(
   "I enter a password that is too short as new password",
   async function (this: ICustomWorld) {
     this.newPassword = "passw";
-    await this.page
-      .getByLabel("New Password", { exact: true })
-      .fill(this.newPassword);
+    const settingsPage = new SettingsPage(this);
+    await settingsPage.fillNewPassword(this.newPassword);
   }
 );
 
 When("I enter an empty new password", async function (this: ICustomWorld) {
   this.newPassword = "";
-  await this.page
-    .getByLabel("New Password", { exact: true })
-    .fill(this.newPassword);
+  const settingsPage = new SettingsPage(this);
+  await settingsPage.fillNewPassword(this.newPassword);
 });
 
 When("I confirm the new password", async function (this: ICustomWorld) {
-  await this.page.getByLabel("Confirm New Password").fill(this.newPassword);
+  const settingsPage = new SettingsPage(this);
+  await settingsPage.fillConfirmNewPassword(this.newPassword);
 });
 
 When(
   "I enter a different password in the confirm field",
   async function (this: ICustomWorld) {
     const differentPassword = faker.internet.password();
-    await this.page.getByLabel("Confirm New Password").fill(differentPassword);
+    const settingsPage = new SettingsPage(this);
+    await settingsPage.fillConfirmNewPassword(differentPassword);
   }
 );
 
@@ -232,9 +212,8 @@ When(
           .words({ min: 2, max: 5 })
           .replace(/^\w/, (c) => c.toUpperCase())
       : title;
-    await this.page
-      .getByRole("textbox", { name: "Title" })
-      .fill(this.bookTitle);
+    const booksPage = new BooksPage(this);
+    await booksPage.fillBookTitle(this.bookTitle);
   }
 );
 
@@ -244,9 +223,8 @@ When(
     this.bookDescription = description.includes("book description")
       ? faker.lorem.paragraph()
       : description;
-    await this.page
-      .getByRole("textbox", { name: "Description" })
-      .fill(this.bookDescription);
+    const booksPage = new BooksPage(this);
+    await booksPage.fillBookDescription(this.bookDescription);
   }
 );
 
@@ -256,9 +234,8 @@ When(
     this.bookAuthor = author.includes("John Doe")
       ? faker.person.fullName()
       : author;
-    await this.page
-      .getByRole("textbox", { name: "Author" })
-      .fill(this.bookAuthor);
+    const booksPage = new BooksPage(this);
+    await booksPage.fillBookAuthor(this.bookAuthor);
   }
 );
 
@@ -271,9 +248,8 @@ When(
           .getFullYear()
           .toString()
       : year;
-    await this.page
-      .getByRole("spinbutton", { name: "Year" })
-      .fill(this.bookYear);
+    const booksPage = new BooksPage(this);
+    await booksPage.fillBookYear(this.bookYear);
   }
 );
 
@@ -281,169 +257,133 @@ When(
   "I select the genres {string} and {string}",
   async function (this: ICustomWorld, genre1: string, genre2: string) {
     this.bookGenres = [genre1, genre2];
-    await this.page.getByRole("combobox").click();
-    for (const genre of this.bookGenres) {
-      await this.page
-        .getByRole("option", { name: genre })
-        .getByRole("checkbox")
-        .check();
-    }
-    await this.page.keyboard.press("Escape");
+    const booksPage = new BooksPage(this);
+    await booksPage.selectGenres(this.bookGenres);
   }
 );
 
 When("I upload a PDF file", async function (this: ICustomWorld) {
-  const bookPath = path.join(process.cwd(), "/attachments/book1.pdf");
-  const [fileChooser] = await Promise.all([
-    this.page.waitForEvent("filechooser"),
-    this.page
-      .getByText("Drag and drop a PDF file here, or click to select")
-      .click(),
-  ]);
-  await fileChooser.setFiles(bookPath);
+  const booksPage = new BooksPage(this);
+  await booksPage.uploadPdf(); // Assumes default "book1.pdf"
 });
 
 // Book update specific steps - add these after the book creation steps section
 
 When("I hover over the book card", async function (this: ICustomWorld) {
-  const bookCard = this.page.locator(".MuiCard-root", {
-    hasText: this.bookTitle,
-  });
-  await bookCard.hover();
+  const booksPage = new BooksPage(this);
+  await booksPage.hoverBookCard(this.bookTitle);
 });
 
 When("I click the edit button", async function (this: ICustomWorld) {
-  const bookCard = this.page.locator(".MuiCard-root", {
-    hasText: this.bookTitle,
-  });
-  const updateButton = bookCard.locator("[data-testid='EditOutlinedIcon']");
-  await updateButton.waitFor();
-  await updateButton.click();
+  const booksPage = new BooksPage(this);
+  await booksPage.clickEditButtonOnBook(this.bookTitle);
 });
 
 When("I click on the book cover", async function (this: ICustomWorld) {
-  const bookCard = this.page.locator(".MuiCard-root", {
-    hasText: this.bookTitle,
-  });
-  await bookCard.locator(".MuiCardMedia-media").click();
+  const booksPage = new BooksPage(this);
+  await booksPage.clickBookCover(this.bookTitle);
 });
 
 Then(
   "I should see the book form with existing data",
   async function (this: ICustomWorld) {
-    await expect(this.page.getByRole("textbox", { name: "Title" })).toHaveValue(
-      this.bookTitle
-    );
-    await expect(
-      this.page.getByRole("textbox", { name: "Description" })
-    ).toHaveValue(this.bookDescription);
-    await expect(
-      this.page.getByRole("textbox", { name: "Author" })
-    ).toHaveValue(this.bookAuthor);
-    await expect(
-      this.page.getByRole("spinbutton", { name: "Year" })
-    ).toHaveValue(this.bookYear);
-    // Check genres - they appear as a comma-separated text
-    await expect(
-      this.page.getByText([...this.bookGenres].sort().join(", "))
-    ).toBeVisible();
+    const booksPage = new BooksPage(this);
+    await booksPage.verifyBookForm({
+      title: this.bookTitle,
+      description: this.bookDescription,
+      author: this.bookAuthor,
+      year: this.bookYear,
+      genres: this.bookGenres,
+    });
   }
 );
 
 Then(
   "I should see the book details with updated information",
   async function (this: ICustomWorld) {
-    await this.page.getByRole("heading", { name: this.bookTitle }).waitFor();
-    await this.page.getByText(this.bookDescription).waitFor();
-    await this.page.getByText(this.bookAuthor).waitFor();
-    await this.page.getByText(this.bookYear).waitFor();
-
-    for (const genre of this.bookGenres) {
-      await this.page.locator(".MuiChip-root", { hasText: genre }).waitFor();
-    }
-
-    await this.page.getByRole("link", { name: "Download" }).waitFor();
-    await this.page.getByRole("button", { name: "Read Online" }).waitFor();
+    const bookDetailsPage = new BookDetailsPage(this);
+    await bookDetailsPage.verifyBookDetails({
+      title: this.bookTitle,
+      description: this.bookDescription,
+      author: this.bookAuthor,
+      year: this.bookYear,
+      genres: this.bookGenres,
+    });
+    await bookDetailsPage.verifyDownloadAndReadOnlineButtons();
   }
 );
 
 Then(
   "I should see the book details with updated information except title",
   async function (this: ICustomWorld) {
-    // Original title should be visible as it wasn't changed
-    await this.page.getByRole("heading", { name: this.bookTitle }).waitFor();
-    // Other fields should have been updated
-    await this.page.getByText(this.bookDescription).waitFor();
-    await this.page.getByText(this.bookAuthor).waitFor();
-    await this.page.getByText(this.bookYear).waitFor();
-
-    for (const genre of this.bookGenres) {
-      await this.page.locator(".MuiChip-root", { hasText: genre }).waitFor();
-    }
+    const bookDetailsPage = new BookDetailsPage(this);
+    // Assuming this.bookTitle holds the *original* title for this check
+    await bookDetailsPage.verifyBookDetails({
+      title: this.bookTitle, // Original title
+      description: this.bookDescription, // Updated
+      author: this.bookAuthor, // Updated
+      year: this.bookYear, // Updated
+      genres: this.bookGenres, // Updated
+    });
   }
 );
 
 Then(
   "I should see the book details with updated information except description",
   async function (this: ICustomWorld) {
-    await this.page.getByRole("heading", { name: this.bookTitle }).waitFor();
-    // Original description should be visible
-    await this.page.getByText(this.bookDescription).waitFor();
-    await this.page.getByText(this.bookAuthor).waitFor();
-    await this.page.getByText(this.bookYear).waitFor();
-
-    for (const genre of this.bookGenres) {
-      await this.page.locator(".MuiChip-root", { hasText: genre }).waitFor();
-    }
+    const bookDetailsPage = new BookDetailsPage(this);
+    await bookDetailsPage.verifyBookDetails({
+      title: this.bookTitle, // Updated
+      description: this.bookDescription, // Original
+      author: this.bookAuthor, // Updated
+      year: this.bookYear, // Updated
+      genres: this.bookGenres, // Updated
+    });
   }
 );
 
 Then(
   "I should see the book details with updated information except author",
   async function (this: ICustomWorld) {
-    await this.page.getByRole("heading", { name: this.bookTitle }).waitFor();
-    await this.page.getByText(this.bookDescription).waitFor();
-    // Original author should be visible
-    await this.page.getByText(this.bookAuthor).waitFor();
-    await this.page.getByText(this.bookYear).waitFor();
-
-    for (const genre of this.bookGenres) {
-      await this.page.locator(".MuiChip-root", { hasText: genre }).waitFor();
-    }
+    const bookDetailsPage = new BookDetailsPage(this);
+    await bookDetailsPage.verifyBookDetails({
+      title: this.bookTitle, // Updated
+      description: this.bookDescription, // Updated
+      author: this.bookAuthor, // Original
+      year: this.bookYear, // Updated
+      genres: this.bookGenres, // Updated
+    });
   }
 );
 
 Then(
   "I should see the book details with updated information except year",
   async function (this: ICustomWorld) {
-    await this.page.getByRole("heading", { name: this.bookTitle }).waitFor();
-    await this.page.getByText(this.bookDescription).waitFor();
-    await this.page.getByText(this.bookAuthor).waitFor();
-    // Original year should be visible
-    await this.page.getByText(this.bookYear).waitFor();
-
-    for (const genre of this.bookGenres) {
-      await this.page.locator(".MuiChip-root", { hasText: genre }).waitFor();
-    }
+    const bookDetailsPage = new BookDetailsPage(this);
+    await bookDetailsPage.verifyBookDetails({
+      title: this.bookTitle, // Updated
+      description: this.bookDescription, // Updated
+      author: this.bookAuthor, // Updated
+      year: this.bookYear, // Original
+      genres: this.bookGenres, // Updated
+    });
   }
 );
 
 // Login steps
 When("I enter my email and password", async function (this: ICustomWorld) {
-  await this.page.getByRole("textbox", { name: "Email" }).fill(this.email);
-  await this.page
-    .getByRole("textbox", { name: "Password" })
-    .fill(this.password);
+  const loginPage = new LoginPage(this);
+  await loginPage.fillEmail(this.email);
+  await loginPage.fillPassword(this.password);
 });
 
 When(
   "I enter an invalid email and my password",
   async function (this: ICustomWorld) {
     const invalidEmail = faker.internet.email();
-    await this.page.getByRole("textbox", { name: "Email" }).fill(invalidEmail);
-    await this.page
-      .getByRole("textbox", { name: "Password" })
-      .fill(this.password);
+    const loginPage = new LoginPage(this);
+    await loginPage.fillEmail(invalidEmail);
+    await loginPage.fillPassword(this.password);
   }
 );
 
@@ -451,10 +391,9 @@ When(
   "I enter my email and an invalid password",
   async function (this: ICustomWorld) {
     const invalidPassword = faker.internet.password();
-    await this.page.getByRole("textbox", { name: "Email" }).fill(this.email);
-    await this.page
-      .getByRole("textbox", { name: "Password" })
-      .fill(invalidPassword);
+    const loginPage = new LoginPage(this);
+    await loginPage.fillEmail(this.email);
+    await loginPage.fillPassword(invalidPassword);
   }
 );
 
@@ -463,83 +402,79 @@ When(
   async function (this: ICustomWorld) {
     const invalidEmail = faker.internet.email();
     const invalidPassword = faker.internet.password();
-    await this.page.getByRole("textbox", { name: "Email" }).fill(invalidEmail);
-    await this.page
-      .getByRole("textbox", { name: "Password" })
-      .fill(invalidPassword);
+    const loginPage = new LoginPage(this);
+    await loginPage.fillEmail(invalidEmail);
+    await loginPage.fillPassword(invalidPassword);
   }
 );
 
 When(
   "I enter an empty email and my password",
   async function (this: ICustomWorld) {
-    await this.page.getByRole("textbox", { name: "Email" }).fill("");
-    await this.page
-      .getByRole("textbox", { name: "Password" })
-      .fill(this.password);
+    const loginPage = new LoginPage(this);
+    await loginPage.fillEmail("");
+    await loginPage.fillPassword(this.password);
   }
 );
 
 When(
   "I enter my email and an empty password",
   async function (this: ICustomWorld) {
-    await this.page.getByRole("textbox", { name: "Email" }).fill(this.email);
-    await this.page.getByRole("textbox", { name: "Password" }).fill("");
+    const loginPage = new LoginPage(this);
+    await loginPage.fillEmail(this.email);
+    await loginPage.fillPassword("");
   }
 );
 
 When(
   "I enter an empty email and an empty password",
   async function (this: ICustomWorld) {
-    await this.page.getByRole("textbox", { name: "Email" }).fill("");
-    await this.page.getByRole("textbox", { name: "Password" }).fill("");
+    const loginPage = new LoginPage(this);
+    await loginPage.fillEmail("");
+    await loginPage.fillPassword("");
   }
 );
 
 When("I enter an empty email", async function (this: ICustomWorld) {
   this.email = "";
-  await this.page.getByRole("textbox", { name: "Email" }).fill(this.email);
+  const registrationPage = new RegistrationPage(this); // Or LoginPage if context is login
+  await registrationPage.fillEmail(this.email);
 });
 
 When("I enter an empty password", async function (this: ICustomWorld) {
   this.password = "";
-  await this.page
-    .getByRole("textbox", { name: "Password" })
-    .fill(this.password);
+  const registrationPage = new RegistrationPage(this); // Or LoginPage if context is login
+  await registrationPage.fillPassword(this.password);
 });
 
 When(
   "I click the {string} button",
   async function (this: ICustomWorld, buttonName: string) {
-    await this.page.getByRole("button", { name: buttonName }).click();
+    // This step is generic, handled by BasePage or specific page
+    const currentPage = new DashboardPage(this); // Or another appropriate page
+    await currentPage.clickButton(buttonName);
   }
 );
 
 // Assertions
 Then("I should be logged in successfully", async function (this: ICustomWorld) {
-  await this.page
-    .getByRole("heading", { name: `User name: ${this.username}` })
-    .waitFor();
-  await this.page
-    .getByRole("heading", { name: `Email: ${this.email}` })
-    .waitFor();
+  const dashboardPage = new DashboardPage(this);
+  await dashboardPage.verifyLoggedIn(this.username, this.email);
 });
 
 Then(
   "I should be registered successfully",
   async function (this: ICustomWorld) {
-    await this.page
-      .getByRole("heading", { name: `User name: ${this.username}` })
-      .waitFor();
-    await this.page
-      .getByRole("heading", { name: `Email: ${this.email}` })
-      .waitFor();
+    const dashboardPage = new DashboardPage(this);
+    await dashboardPage.verifyLoggedIn(this.username, this.email);
   }
 );
 
 Then(
   "I should be redirected to the dashboard",
   async function (this: ICustomWorld) {
+    // Verification is part of verifyLoggedIn in DashboardPage
+    // If standalone check is needed:
     await expect(this.page).toHaveURL(/dashboard/);
   }
 );
@@ -552,127 +487,127 @@ Then(
 );
 
 Then("I should stay on the settings page", async function (this: ICustomWorld) {
-  await expect(this.page).toHaveURL(/dashboard\/settings/);
+  const settingsPage = new SettingsPage(this);
+  await settingsPage.verifyOnPage();
 });
 
 Then(
   "I should see a username error message {string}",
   async function (this: ICustomWorld, message: string) {
-    await this.page
-      .locator("#username-helper-text.Mui-error", { hasText: message })
-      .waitFor();
+    const registrationPage = new RegistrationPage(this);
+    await expect(await registrationPage.getUsernameErrorMessage(message)).toBeVisible();
   }
 );
 
 Then(
   "I should see an email error message {string}",
   async function (this: ICustomWorld, message: string) {
-    await this.page
-      .locator("#email-helper-text.Mui-error", { hasText: message })
-      .waitFor();
+    // This could be on LoginPage or RegistrationPage
+    if (this.page.url().includes("signup")) {
+      const registrationPage = new RegistrationPage(this);
+      await expect(await registrationPage.getEmailErrorMessage(message)).toBeVisible();
+    } else {
+      const loginPage = new LoginPage(this);
+      await expect(await loginPage.getEmailErrorMessage(message)).toBeVisible();
+    }
   }
 );
 
 Then(
   "I should see a password error message {string}",
   async function (this: ICustomWorld, message: string) {
-    await this.page
-      .locator("#password-helper-text.Mui-error", { hasText: message })
-      .waitFor();
+    // This could be on LoginPage or RegistrationPage
+    if (this.page.url().includes("signup")) {
+      const registrationPage = new RegistrationPage(this);
+      await expect(await registrationPage.getPasswordErrorMessage(message)).toBeVisible();
+    } else {
+      const loginPage = new LoginPage(this);
+      await expect(await loginPage.getPasswordErrorMessage(message)).toBeVisible();
+    }
   }
 );
 
 Then(
   "I should see a current password error message {string}",
   async function (this: ICustomWorld, message: string) {
-    await this.page
-      .locator("#currentPassword-helper-text.Mui-error", { hasText: message })
-      .waitFor();
+    const settingsPage = new SettingsPage(this);
+    await expect(await settingsPage.getCurrentPasswordErrorMessage(message)).toBeVisible();
   }
 );
 
 Then(
   "I should see a new password error message {string}",
   async function (this: ICustomWorld, message: string) {
-    await this.page
-      .locator("#newPassword-helper-text.Mui-error", { hasText: message })
-      .waitFor();
+    const settingsPage = new SettingsPage(this);
+    await expect(await settingsPage.getNewPasswordErrorMessage(message)).toBeVisible();
   }
 );
 
 Then(
   "I should see a confirm password error message {string}",
   async function (this: ICustomWorld, message: string) {
-    await this.page
-      .locator("#confirmPassword-helper-text.Mui-error", { hasText: message })
-      .waitFor();
+    const settingsPage = new SettingsPage(this);
+    await expect(await settingsPage.getConfirmPasswordErrorMessage(message)).toBeVisible();
   }
 );
 
 Then(
   "I should see an error message {string}",
   async function (this: ICustomWorld, message: string) {
-    await this.page.locator(".Mui-error", { hasText: message }).waitFor();
+    // Generic error, could be on any page. Using BasePage for now.
+    const basePage = new DashboardPage(this); // Or any page object
+    await expect(this.page.locator(".Mui-error", { hasText: message })).toBeVisible();
   }
 );
 
 Then(
   "I should see a text message {string}",
   async function (this: ICustomWorld, message: string) {
-    await this.page.getByText(message).waitFor();
+    const basePage = new DashboardPage(this); // Or any page object
+    await basePage.waitForTextMessage(message);
   }
 );
 
 Then(
   "I should see the password updated successfully message",
   async function (this: ICustomWorld) {
-    await this.page
-      .locator(".MuiAlert-colorSuccess .MuiAlert-message", {
-        hasText: "Password successfully updated",
-      })
-      .waitFor();
+    const settingsPage = new SettingsPage(this);
+    await expect(await settingsPage.getSuccessMessage("Password successfully updated")).toBeVisible();
   }
 );
 
 Then(
   "I should be able to login with my new password",
   async function (this: ICustomWorld) {
-    // Logout first
-    await this.page.getByRole("link", { name: "Logout" }).click();
-    await expect(this.page).toHaveURL(this.config.baseUrl);
+    const dashboardPage = new DashboardPage(this);
+    await dashboardPage.logout();
 
-    // Login with new password
-    await this.page.getByRole("link", { name: "Login" }).click();
-    await this.page.getByRole("textbox", { name: "Email" }).fill(this.email);
-    await this.page
-      .getByRole("textbox", { name: "Password" })
-      .fill(this.newPassword);
-    await this.page.getByRole("button", { name: "Sign in" }).click();
+    const loginPage = new LoginPage(this);
+    await loginPage.navigate(); // Ensure on login page
+    await loginPage.login(this.email, this.newPassword);
 
-    await this.page
-      .getByRole("heading", { name: `User name: ${this.username}` })
-      .waitFor();
-    await this.page
-      .getByRole("heading", { name: `Email: ${this.email}` })
-      .waitFor();
-    await expect(this.page).toHaveURL(/dashboard/);
+    await dashboardPage.verifyLoggedIn(this.username, this.email);
   }
 );
 
 Then("I should see an unauthorized error", async function (this: ICustomWorld) {
-  await this.page.getByText("Unauthorized").waitFor();
+  const basePage = new DashboardPage(this); // Or any page object
+  await basePage.waitForTextMessage("Unauthorized");
   await expect(this.page).toHaveURL(/unauthorized/);
 });
 
 Then("I should see a bad request error", async function (this: ICustomWorld) {
-  await this.page.getByText("Bad Request").waitFor();
+  const basePage = new DashboardPage(this); // Or any page object
+  await basePage.waitForTextMessage("Bad Request");
   await expect(this.page).toHaveURL(/bad-request/);
 });
 
 Then(
   "I should see a {string} button",
   async function (this: ICustomWorld, buttonName: string) {
-    await this.page.getByRole("button", { name: buttonName }).waitFor();
+    // Generic button check, could be on any page.
+    const basePage = new DashboardPage(this); // Or any page object
+    await expect(this.page.getByRole("button", { name: buttonName })).toBeVisible();
   }
 );
 
@@ -683,132 +618,86 @@ Then(
     this.bookTitle = titlePattern.includes("Book Title")
       ? this.bookTitle
       : titlePattern;
-
-    const bookCard = this.page.locator(".MuiCard-root", {
-      hasText: this.bookTitle,
-    });
-    await expect(bookCard).toBeVisible();
-    await expect(bookCard.locator(".MuiCardMedia-media")).toBeVisible();
-    await expect(bookCard.locator(".MuiCardContent-root")).toContainText(
-      this.bookAuthor
-    );
+    const booksPage = new BooksPage(this);
+    await booksPage.verifyBookInCollection({ title: this.bookTitle, author: this.bookAuthor });
   }
 );
 
 Then(
   "I should be able to view the book details",
   async function (this: ICustomWorld) {
-    const bookCard = this.page.locator(".MuiCard-root", {
-      hasText: this.bookTitle,
+    const booksPage = new BooksPage(this);
+    await booksPage.clickBookCover(this.bookTitle);
+
+    const bookDetailsPage = new BookDetailsPage(this);
+    await bookDetailsPage.verifyBookDetails({
+      title: this.bookTitle,
+      description: this.bookDescription,
+      author: this.bookAuthor,
+      year: this.bookYear,
+      genres: this.bookGenres,
     });
-    await bookCard.locator(".MuiCardMedia-media").click();
-
-    await this.page.getByRole("heading", { name: this.bookTitle }).waitFor();
-
-    if (this.bookDescription) {
-      await this.page.getByText(this.bookDescription).waitFor();
-    }
-
-    await this.page.getByText(this.bookAuthor).waitFor();
-    await this.page.getByText(this.bookYear).waitFor();
-
-    if (this.bookGenres) {
-      for (const genre of this.bookGenres) {
-        await this.page.locator(".MuiChip-root", { hasText: genre }).waitFor();
-      }
-    }
-
-    await this.page.goBack();
+    await bookDetailsPage.goBack();
   }
 );
 
 Then(
   "I should be able to download or read the book online",
   async function (this: ICustomWorld) {
-    const bookCard = this.page.locator(".MuiCard-root", {
-      hasText: this.bookTitle,
-    });
-    await bookCard.locator(".MuiCardMedia-media").click();
+    const booksPage = new BooksPage(this);
+    await booksPage.clickBookCover(this.bookTitle);
 
-    await this.page.getByRole("link", { name: "Download" }).waitFor();
-    await this.page.getByRole("button", { name: "Read Online" }).waitFor();
-
-    await this.page.goBack();
+    const bookDetailsPage = new BookDetailsPage(this);
+    await bookDetailsPage.verifyDownloadAndReadOnlineButtons();
+    await bookDetailsPage.goBack();
   }
 );
 
 Then(
   "I should be able to delete the book",
   async function (this: ICustomWorld) {
-    const bookCard = this.page.locator(".MuiCard-root", {
-      hasText: this.bookTitle,
-    });
-    await bookCard.hover();
-
-    const deleteButton = bookCard.locator("[data-testid='DeleteOutlinedIcon']");
-    await deleteButton.waitFor();
-    await deleteButton.click();
-    await this.page
-      .locator(".MuiDialog-container .MuiBox-root button")
-      .filter({ hasText: "Delete" })
-      .click();
-    await expect(bookCard).not.toBeVisible();
+    const booksPage = new BooksPage(this);
+    await booksPage.deleteBook(this.bookTitle);
   }
 );
 
 Then(
   "I should stay on the book creation page",
   async function (this: ICustomWorld) {
-    await expect(this.page).toHaveURL(/book\/create/);
+    const booksPage = new BooksPage(this);
+    await booksPage.verifyOnBookCreationPage();
   }
 );
 
 Then("I should see the PDF viewer", async function (this: ICustomWorld) {
-  await this.page.getByRole("button", { name: "Close Reader" }).waitFor();
-
-  const iframeLocator = this.page.locator('iframe[title="PDF Viewer"]');
-  await iframeLocator.waitFor({ state: "attached" });
-  const frameHandle = await iframeLocator.elementHandle();
-  const frame = await frameHandle?.contentFrame();
-
-  if (!frame) throw new Error("Iframe with PDF Viewer not found or not loaded");
-
-  await frame.locator("embed[type='application/pdf']").waitFor();
+  const bookDetailsPage = new BookDetailsPage(this);
+  await bookDetailsPage.verifyPdfViewer();
 });
 
 Then(
   "I should be able to download the book",
   async function (this: ICustomWorld) {
-    // Wait for the download to start
-    const downloadPromise = this.page.waitForEvent("download");
-    // The download is triggered by the "Download" link click in the previous step
-    const download = await downloadPromise;
-
-    // Verify the download has initiated
-    const path = await download.path();
-    expect(path).toBeTruthy();
-
-    // Verify the download has the correct filename
-    const suggestedFilename = download.suggestedFilename();
-    expect(suggestedFilename).toContain(".pdf");
-    expect(suggestedFilename.toLowerCase()).toContain(
-      this.bookTitle.toLowerCase()
-    );
+    const bookDetailsPage = new BookDetailsPage(this);
+    await bookDetailsPage.waitForDownload(this.bookTitle);
   }
 );
 
 // New step definitions to add to common.steps.ts
 
 When("I click on the search field", async function (this: ICustomWorld) {
-  const searchField = this.page.getByPlaceholder("Search…");
-  await searchField.click();
+  // This is part of the search method in DashboardPage
+  // No direct action needed here if search is called next
+  // If it's a standalone click:
+  const dashboardPage = new DashboardPage(this);
+  await dashboardPage.search(""); // Click and prepare for fill
 });
 
 When(
   "I enter the book title in the search field",
   async function (this: ICustomWorld) {
-    const searchField = this.page.getByPlaceholder("Search…");
-    await searchField.fill(this.bookTitle);
+    const dashboardPage = new DashboardPage(this);
+    // Assuming search field was already clicked or fill handles it
+    await this.page.getByPlaceholder("Search…").fill(this.bookTitle);
   }
 );
 
@@ -819,47 +708,40 @@ When("I press Enter", async function (this: ICustomWorld) {
 When(
   "I navigate to the {string} catalog",
   async function (this: ICustomWorld, catalogName: string) {
-    await this.page
-      .locator(".MuiAppBar-root .MuiBox-root", { hasText: catalogName })
-      .click();
+    const dashboardPage = new DashboardPage(this);
+    await dashboardPage.clickCatalog(catalogName);
   }
 );
 
 When(
   "I select {string} from the genre filter",
   async function (this: ICustomWorld, genre: string) {
-    await this.page
-      .locator(".MuiFormControl-root", { hasText: "Genre" })
-      .click();
-    await this.page.getByRole("option", { name: genre }).click();
+    const booksPage = new BooksPage(this);
+    await booksPage.selectGenreFilter(genre);
   }
 );
 
 When(
   "I enter the book author in the author filter",
   async function (this: ICustomWorld) {
-    await this.page.locator("input[name='author']").fill(this.bookAuthor);
+    const booksPage = new BooksPage(this);
+    await booksPage.fillAuthorFilter(this.bookAuthor);
   }
 );
 
 When(
   "I enter the book year in the year filter",
   async function (this: ICustomWorld) {
-    await this.page.locator("input[name='year']").fill(this.bookYear);
+    const booksPage = new BooksPage(this);
+    await booksPage.fillYearFilter(this.bookYear);
   }
 );
 
 Then(
   "I should see search results containing my book",
   async function (this: ICustomWorld) {
-    const bookCard = this.page.locator(".MuiCard-root", {
-      hasText: this.bookTitle,
-    });
-    await expect(bookCard).toBeVisible();
-    await expect(bookCard.locator(".MuiCardMedia-media")).toBeVisible();
-    await expect(bookCard.locator(".MuiCardContent-root")).toContainText(
-      this.bookAuthor
-    );
+    const booksPage = new BooksPage(this); // Assuming search results are on a BooksPage-like view
+    await booksPage.verifyBookInCollection({ title: this.bookTitle, author: this.bookAuthor });
   }
 );
 
