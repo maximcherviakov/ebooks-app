@@ -48,10 +48,18 @@ export class BookDetailsPage extends BasePage {
   }
 
   async waitForDownload(expectedTitle: string): Promise<string> {
+    // Set up the download promise before clicking the link
     const downloadPromise = this.page.waitForEvent("download");
+    
+    // Click the download link to trigger the download
+    await this.page.getByRole("link", { name: "Download" }).click();
+    
+    // Wait for the download to complete
     const download = await downloadPromise;
     const path = await download.path();
     expect(path).toBeTruthy();
+    
+    // Verify the download has the correct filename
     const suggestedFilename = download.suggestedFilename();
     expect(suggestedFilename).toContain(".pdf");
     expect(suggestedFilename.toLowerCase()).toContain(expectedTitle.toLowerCase());
