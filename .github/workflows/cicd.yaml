@@ -285,6 +285,7 @@ jobs:
           cmd_options: '-a -j -m 10 -T 15'
           allow_issue_writing: false
           fail_action: false
+          artifact_name: zap-baseline-report
 
       - name: Run ZAP Full Scan
         uses: zaproxy/action-full-scan@v0.11.0
@@ -294,30 +295,9 @@ jobs:
           cmd_options: '-a -j -m 10 -T 30'
           allow_issue_writing: false
           fail_action: false
-        continue-on-error: true
+          continue-on-error: true
+          artifact_name: zap-fullscan-report
 
       - name: Stop application containers
         if: always()
         run: docker-compose -f docker-compose.ci.yaml down
-
-      - name: Upload ZAP Baseline Report
-        uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: zap-baseline-report
-          path: |
-            report_html.html
-            report_json.json
-            report_md.md
-          retention-days: 30
-
-      - name: Upload ZAP Full Scan Report
-        uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: zap-fullscan-report
-          path: |
-            report_html.html
-            report_json.json
-            report_md.md
-          retention-days: 30
