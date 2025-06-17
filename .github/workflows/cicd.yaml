@@ -285,7 +285,7 @@ jobs:
           cmd_options: '-a -j -m 10 -T 15'
           allow_issue_writing: false
           fail_action: false
-          artifact_name: zap-baseline-report
+          artifact_name: baseline-report
 
       - name: Run ZAP Full Scan
         uses: zaproxy/action-full-scan@v0.11.0
@@ -296,7 +296,7 @@ jobs:
           allow_issue_writing: false
           fail_action: false
           continue-on-error: true
-          artifact_name: zap-fullscan-report
+          artifact_name: fullscan-report
 
       - name: Stop application containers
         if: always()
