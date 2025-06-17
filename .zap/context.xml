@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<configuration>
+    <context>
+        <name>Ebooks App Context</name>
+        <desc>Security testing context for the Ebooks application</desc>
+        <inscope>true</inscope>
+        <incregexes>http://localhost:80/.*</incregexes>
+        <excregexes>
+            <regex>http://localhost:80/static/.*</regex>
+            <regex>http://localhost:80/assets/.*</regex>
+            <regex>http://localhost:80/.*\.(css|js|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$</regex>
+            <regex>http://localhost:80/api/auth/logout.*</regex>
+        </excregexes>
+        <tech>
+            <include>Db</include>
+            <include>Db.MongoDB</include>
+            <include>Language</include>
+            <include>Language.JavaScript</include>
+            <include>OS</include>
+            <include>OS.Linux</include>
+            <include>SCM</include>
+            <include>SCM.Git</include>
+            <include>WS</include>
+            <include>WS.Node.js</include>
+        </tech>
+        <urlparser>
+            <class>org.zaproxy.zap.model.StandardParameterParser</class>
+            <config></config>
+        </urlparser>
+        <postparser>
+            <class>org.zaproxy.zap.model.StandardParameterParser</class>
+            <config></config>
+        </postparser>
+        <authentication>
+            <type>0</type>
+        </authentication>
+        <users>
+        </users>
+        <forceduser>-1</forceduser>
+        <session>
+            <type>0</type>
+        </session>
+    </context>
+</configuration>
