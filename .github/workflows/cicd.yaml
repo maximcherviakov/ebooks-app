@@ -278,20 +278,20 @@ jobs:
           timeout 120 bash -c 'until curl -f http://localhost:80 2>/dev/null; do sleep 5; done' || echo "Application may not be fully ready, proceeding with scan"
 
       - name: Run ZAP Baseline Scan
-        uses: zaproxy/action-baseline@v0.12.0
+        uses: zaproxy/action-baseline@v0.13.0
         with:
           target: 'http://localhost:80'
           rules_file_name: '.zap/rules.tsv'
-          cmd_options: '-a -j -m 10 -T 15 -z "-configFile /zap/wrk/.zap/zap.conf"'
+          cmd_options: '-a -j -m 10 -T 15'
           allow_issue_writing: false
           fail_action: false
 
       - name: Run ZAP Full Scan
-        uses: zaproxy/action-full-scan@v0.10.0
+        uses: zaproxy/action-full-scan@v0.11.0
         with:
           target: 'http://localhost:80'
           rules_file_name: '.zap/rules.tsv'
-          cmd_options: '-a -j -m 10 -T 30 -z "-configFile /zap/wrk/.zap/zap.conf"'
+          cmd_options: '-a -j -m 10 -T 30'
           allow_issue_writing: false
           fail_action: false
         continue-on-error: true
@@ -305,21 +305,19 @@ jobs:
         if: always()
         with:
           name: zap-baseline-report
-          path: report_html.html
+          path: |
+            report_html.html
+            report_json.json
+            report_md.md
           retention-days: 30
 
       - name: Upload ZAP Full Scan Report
         uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: zap-full-scan-report
-          path: report_html.html
-          retention-days: 30
-
-      - name: Upload ZAP JSON Report
-        uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: zap-json-report
-          path: report_json.json
+          name: zap-fullscan-report
+          path: |
+            report_html.html
+            report_json.json
+            report_md.md
           retention-days: 30
