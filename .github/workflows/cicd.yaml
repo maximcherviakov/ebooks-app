@@ -278,12 +278,15 @@ jobs:
           timeout 120 bash -c 'until curl -f http://localhost:80 2>/dev/null; do sleep 5; done' || echo "Application may not be fully ready, proceeding with scan"
 
       - name: Create ZAP reports directory
-        run: mkdir -p zap-reports
+        run: |
+          mkdir -p zap-reports
+          chmod 777 zap-reports
 
       - name: Run ZAP Baseline Scan
         run: |
           docker run -v $(pwd)/zap-reports:/zap/wrk/:rw \
             --network="host" \
+            --user $(id -u):$(id -g) \
             -t zaproxy/zap-stable zap-baseline.py \
             -t http://localhost:80 \
             -r baseline-report.html \
@@ -308,6 +311,7 @@ jobs:
         run: |
           docker run -v $(pwd)/zap-reports:/zap/wrk/:rw \
             --network="host" \
+            --user $(id -u):$(id -g) \
             -t zaproxy/zap-stable zap-full-scan.py \
             -t http://localhost:80 \
             -r fullscan-report.html \
