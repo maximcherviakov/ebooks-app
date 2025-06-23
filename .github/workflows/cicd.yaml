@@ -277,15 +277,18 @@ jobs:
           echo "Waiting for application to start..."
           timeout 120 bash -c 'until curl -f http://localhost:80 2>/dev/null; do sleep 5; done' || echo "Application may not be fully ready, proceeding with scan"
 
+      - name: Create ZAP reports directory
+        run: mkdir -p zap-reports
+
       - name: Run ZAP Baseline Scan
         run: |
-          docker run -v $(pwd):/zap/wrk/:rw \
+          docker run -v $(pwd)/zap-reports:/zap/wrk/:rw \
+            --network="host" \
             -t owasp/zap2docker-stable zap-baseline.py \
-            -t http://host.docker.internal:80 \
-            -g gen.conf \
-            -r zap-baseline-report.html \
-            -J zap-baseline-report.json \
-            -x zap-baseline-report.xml \
+            -t http://localhost:80 \
+            -r baseline-report.html \
+            -J baseline-report.json \
+            -x baseline-report.xml \
             || true
 
       - name: Upload ZAP Baseline Report
@@ -294,20 +297,20 @@ jobs:
         with:
           name: zap-baseline-scan-report
           path: |
-            zap-baseline-report.html
-            zap-baseline-report.json
-            zap-baseline-report.xml
+            zap-reports/baseline-report.html
+            zap-reports/baseline-report.json
+            zap-reports/baseline-report.xml
           retention-days: 30
 
       - name: Run ZAP Full Scan
         run: |
-          docker run -v $(pwd):/zap/wrk/:rw \
+          docker run -v $(pwd)/zap-reports:/zap/wrk/:rw \
+            --network="host" \
             -t owasp/zap2docker-stable zap-full-scan.py \
-            -t http://host.docker.internal:80 \
-            -g gen.conf \
-            -r zap-fullscan-report.html \
-            -J zap-fullscan-report.json \
-            -x zap-fullscan-report.xml \
+            -t http://localhost:80 \
+            -r fullscan-report.html \
+            -J fullscan-report.json \
+            -x fullscan-report.xml \
             || true
 
       - name: Upload ZAP Full Scan Report
@@ -316,9 +319,9 @@ jobs:
         with:
           name: zap-fullscan-scan-report
           path: |
-            zap-fullscan-report.html
-            zap-fullscan-report.json
-            zap-fullscan-report.xml
+            zap-reports/fullscan-report.html
+            zap-reports/fullscan-report.json
+            zap-reports/fullscan-report.xml
           retention-days: 30
 
       - name: Stop application containers
