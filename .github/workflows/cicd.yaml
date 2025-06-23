@@ -287,19 +287,21 @@ jobs:
             -t owasp/zap2docker-stable zap-baseline.py \
             -t http://localhost:80 \
             -r baseline-report.html \
-            -J baseline-report.json \
-            -x baseline-report.xml \
-            || true
+            || echo "ZAP baseline scan completed with exit code $?"
+
+      - name: Debug - List ZAP reports directory
+        run: |
+          echo "Contents of zap-reports directory:"
+          ls -la zap-reports/ || echo "zap-reports directory not found"
+          echo "Contents of current directory:"
+          ls -la .
 
       - name: Upload ZAP Baseline Report
         uses: actions/upload-artifact@v4
         if: always()
         with:
           name: zap-baseline-scan-report
-          path: |
-            zap-reports/baseline-report.html
-            zap-reports/baseline-report.json
-            zap-reports/baseline-report.xml
+          path: zap-reports/
           retention-days: 30
 
       - name: Run ZAP Full Scan
@@ -309,19 +311,19 @@ jobs:
             -t owasp/zap2docker-stable zap-full-scan.py \
             -t http://localhost:80 \
             -r fullscan-report.html \
-            -J fullscan-report.json \
-            -x fullscan-report.xml \
-            || true
+            || echo "ZAP full scan completed with exit code $?"
+
+      - name: Debug - List ZAP reports directory after full scan
+        run: |
+          echo "Contents of zap-reports directory after full scan:"
+          ls -la zap-reports/ || echo "zap-reports directory not found"
 
       - name: Upload ZAP Full Scan Report
         uses: actions/upload-artifact@v4
         if: always()
         with:
           name: zap-fullscan-scan-report
-          path: |
-            zap-reports/fullscan-report.html
-            zap-reports/fullscan-report.json
-            zap-reports/fullscan-report.xml
+          path: zap-reports/
           retention-days: 30
 
       - name: Stop application containers
